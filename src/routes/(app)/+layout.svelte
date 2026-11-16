@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { Palmtree, Settings } from '@lucide/svelte';
+	import Avatar from '#lib/components/Avatar.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import LangSwitch from '#lib/components/LangSwitch.svelte';
 	import { t, timeAgo } from '#lib/i18n.js';
@@ -40,7 +42,19 @@
 					{data.refreshing ? t().nav.syncing : data.lastUpdated ? t().nav.synced(timeAgo(data.lastUpdated)) : t().nav.notSynced}
 				</span>
 				<form method="POST" action="/logout" class="flex items-center gap-2">
-					<a href="/account" aria-current={active('/account') ? 'page' : undefined} class="text-[13px] underline-offset-4 hover:text-fg hover:underline {active('/account') ? 'text-fg underline' : 'text-muted'}" title={t().nav.account}>{data.user.name}</a>
+					<a
+						href="/account"
+						aria-current={active('/account') ? 'page' : undefined}
+						class="flex h-8 items-center gap-2 border pr-2.5 pl-1 text-[13px] transition-colors {active('/account') ? 'border-fg text-fg' : 'border-line-strong text-fg hover:bg-hover'}"
+						title={t().nav.account}
+						data-account-link
+					>
+						<Avatar id={data.user.id} name={data.user.name} size={22} />
+						<span class="hidden max-w-32 truncate sm:inline">{data.user.name}</span>
+						<span class="sm:hidden">{t().nav.accountShort}</span>
+						{#if data.user.away}<Palmtree class="size-3.5 text-ball" aria-label={t().common.onBreak} />{/if}
+						<Settings class="size-3.5 text-muted" />
+					</a>
 					<button class="btn-ghost h-7 px-2">{t().nav.signOut}</button>
 				</form>
 			</div>

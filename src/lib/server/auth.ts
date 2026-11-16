@@ -16,6 +16,8 @@ export interface User {
 	name: string;
 	role: Role;
 	gamesPerWeek: number;
+	/** on a break: every week counts as not playing unless they mark times in it */
+	away: boolean;
 }
 
 export const DEFAULT_GAMES_PER_WEEK = 2;
@@ -33,7 +35,9 @@ export const auth = betterAuth({
 	user: {
 		additionalFields: {
 			// how many games a week the person wants; set on /account, never from the sign-up body
-			gamesPerWeek: { type: 'number', required: false, defaultValue: DEFAULT_GAMES_PER_WEEK, input: false }
+			gamesPerWeek: { type: 'number', required: false, defaultValue: DEFAULT_GAMES_PER_WEEK, input: false },
+			// on a break; set on /account or /welcome
+			away: { type: 'boolean', required: false, defaultValue: false, input: false }
 		}
 	},
 	// Integer user ids, so availability and invites keep plain INTEGER foreign keys.
@@ -73,13 +77,15 @@ export function toUser(u: {
 	name: string;
 	role?: string | null;
 	gamesPerWeek?: number | null;
+	away?: boolean | null;
 }): User {
 	return {
 		id: Number(u.id),
 		email: u.email,
 		name: u.name,
 		role: u.role === 'admin' ? 'admin' : 'user',
-		gamesPerWeek: u.gamesPerWeek ?? DEFAULT_GAMES_PER_WEEK
+		gamesPerWeek: u.gamesPerWeek ?? DEFAULT_GAMES_PER_WEEK,
+		away: Boolean(u.away)
 	};
 }
 

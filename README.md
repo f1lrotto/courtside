@@ -15,11 +15,11 @@ The **Plan** tab picks a set of games per week: each person sets how many games 
 ## Screens
 
 - **Sign in / Sign up**: invite-only accounts
-- **Welcome** (/welcome): guided setup right after sign-up: language and name, games per week, and usual play times (with how many friends are often free then and live counts of the games you'd join). It adds those times to the next two weeks; it can be skipped and re-run from Account
+- **Welcome** (/welcome): guided setup right after sign-up: language and name, games per week, and usual play times (with how many friends are often free then and live counts of the games you'd join), or "I'm on a break for now". It adds those times to the next two weeks; it can be skipped and re-run from Account
 - **Matches**: Plan, Doubles, Singles and One short tabs, game length, start times, prices and Book links
-- **My availability**: a weekly grid you paint, with undo, an "I'm not playing this week" button (counts as filled in) and who has filled in
+- **My availability**: a weekly grid you paint, with undo, an "I'm not playing this week" button (counts as filled in) and each person's status this week: filled in, not playing, on a break, or not yet
 - **Courts**: a two-week heatmap and a per-court timeline for each day
-- **Account**: name, games per week, language, password, and the guided setup again
+- **Account** (your name, top right): name, games per week, a break for not playing a while (every week counts as not playing unless you mark times in it; turning it on clears your upcoming times), language, password, and the guided setup again
 - **Admin**: invites, roles, password resets, removing people, court sync status
 
 ## Languages

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Ban, ChevronLeft, ChevronRight, Copy, Eraser, Moon, Check, LoaderCircle, TriangleAlert, Undo2 } from '@lucide/svelte';
+	import { Ban, ChevronLeft, ChevronRight, Copy, Eraser, Moon, Check, LoaderCircle, Palmtree, TriangleAlert, Undo2 } from '@lucide/svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import { DAY_SLOTS, FIRST_SLOT, LAST_SLOT, SLOT_MINUTES, addDays, minutesNowLocal, slotLabel, weekStart } from '#lib/time.js';
 	import { fmtDayMonth, fmtWeekday, t } from '#lib/i18n.js';
@@ -242,10 +242,24 @@
 
 	const hasPrev = $derived(Object.values(data.prevWeek).some((s) => s.length > 0));
 	const total = $derived(Object.values(sel).reduce((n, s) => n + s.size, 0) * (SLOT_MINUTES / 60));
-	const filledIn = $derived(
-		data.people.filter((p) => (p.id === data.user.id ? total > 0 || off : data.filledIn.some((q) => q.id === p.id) || data.notPlaying.includes(p.id)))
+	// marking times wins; a break counts for every week without times; then this week's "not playing"
+	const ORDER = ['marked', 'off', 'away', 'missing'] as const;
+	const team = $derived(
+		data.people
+			.map((p) => {
+				const me = p.id === data.user.id;
+				const status: (typeof ORDER)[number] = (me ? total > 0 : data.filledIn.some((q) => q.id === p.id))
+					? 'marked'
+					: p.away
+						? 'away'
+						: (me ? off : data.notPlaying.includes(p.id))
+							? 'off'
+							: 'missing';
+				return { ...p, me, status };
+			})
+			.sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status))
 	);
-	const missing = $derived(data.people.filter((p) => !filledIn.some((q) => q.id === p.id)));
+	const answered = $derived(team.filter((p) => p.status !== 'missing').length);
 
 	// ---- details for the cell under the pointer, focused, or last tapped (works without hover) ----
 	let inspect = $state<{ di: number; s: number } | null>(null);
@@ -289,6 +303,14 @@
 	</div>
 </div>
 
+{#if data.user.away}
+	<div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border border-ball/40 bg-panel px-4 py-3 text-sm" data-break-banner>
+		<Palmtree class="size-4 shrink-0 text-ball" />
+		<span class="min-w-56 flex-1">{t().avail.breakBanner}</span>
+		<a href="/account#break" class="eyebrow ml-8 text-fg sm:ml-0">{t().avail.breakManage} →</a>
+	</div>
+{/if}
+
 <div class="mt-6 flex flex-wrap items-center gap-2">
 	<button class="btn-ghost {eveningsOn ? 'border-fg! bg-fg! text-black!' : ''}" onclick={toggleEvenings} disabled={!editable} aria-pressed={eveningsOn}>
 		<Moon class="size-3.5" /> {t().avail.evenings}
@@ -297,9 +319,11 @@
 		<Copy class="size-3.5" /> {t().avail.copyLast}
 	</button>
 	<button class="btn-ghost" onclick={clearWeek} disabled={total === 0 || !editable}><Eraser class="size-3.5" /> {t().avail.clear}</button>
-	<button class="btn-ghost {off ? 'border-fg! bg-fg! text-black!' : ''}" onclick={toggleOff} disabled={!editable} aria-pressed={off} title={t().avail.notPlayingTitle}>
-		<Ban class="size-3.5" /> {t().avail.notPlaying}
-	</button>
+	{#if !data.user.away}
+		<button class="btn-ghost {off ? 'border-fg! bg-fg! text-black!' : ''}" onclick={toggleOff} disabled={!editable} aria-pressed={off} title={t().avail.notPlayingTitle}>
+			<Ban class="size-3.5" /> {t().avail.notPlaying}
+		</button>
+	{/if}
 	{#if !editable}<span class="text-xs text-faint">{t().avail.over}</span>{/if}
 </div>
 
@@ -388,24 +412,21 @@
 		</div>
 		<div class="card p-4">
 			<h2 class="eyebrow">{t().avail.thisWeek}</h2>
-			<p class="mt-0.5 text-xs text-muted">{t().avail.filledIn(filledIn.length, data.people.length)}</p>
+			<p class="mt-0.5 text-xs text-muted">{t().avail.filledIn(answered, data.people.length)}</p>
 			<ul class="mt-3 space-y-2">
-				{#each filledIn as p (p.id)}
-					<li class="flex items-center gap-2 text-[13px]">
-						<Avatar id={p.id} name={p.name} size={20} me={p.id === data.user.id} />
-						{p.name}{#if p.id === data.user.id}<span class="text-faint">&nbsp;{t().common.youParen}</span>{/if}
-						{#if p.id === data.user.id ? off : data.notPlaying.includes(p.id)}
-							<span class="ml-auto text-[11px] text-muted">{t().avail.notPlayingShort}</span>
-						{:else}
+				{#each team as p (p.id)}
+					<li class="flex items-center gap-2 text-[13px] {p.status === 'missing' ? 'text-faint' : ''}" data-status={p.status}>
+						<span class={p.status === 'missing' ? 'opacity-50' : ''}><Avatar id={p.id} name={p.name} size={20} me={p.me && p.status !== 'missing'} /></span>
+						{p.name}{#if p.me}<span class="text-faint">&nbsp;{t().common.youParen}</span>{/if}
+						{#if p.status === 'marked'}
 							<Check class="ml-auto size-3.5 text-free" />
+						{:else if p.status === 'off'}
+							<span class="ml-auto flex items-center gap-1 text-[11px] text-muted"><Ban class="size-3" /> {t().avail.notPlayingShort}</span>
+						{:else if p.status === 'away'}
+							<span class="ml-auto flex items-center gap-1 text-[11px] text-muted"><Palmtree class="size-3" /> {t().common.onBreakShort}</span>
+						{:else}
+							<span class="ml-auto text-[11px]">{t().avail.notYet}</span>
 						{/if}
-					</li>
-				{/each}
-				{#each missing as p (p.id)}
-					<li class="flex items-center gap-2 text-[13px] text-faint">
-						<span class="opacity-50"><Avatar id={p.id} name={p.name} size={20} /></span>
-						{p.name}{#if p.id === data.user.id}&nbsp;{t().common.youParen}{/if}
-						<span class="ml-auto text-[11px]">{t().avail.notYet}</span>
 					</li>
 				{/each}
 			</ul>

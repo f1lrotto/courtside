@@ -6,6 +6,8 @@ export interface Person {
 	name: string;
 	/** games a week this person wants at most (the weekly plan respects it) */
 	gamesPerWeek?: number;
+	/** on a break: not playing any week they haven't marked times in */
+	away?: boolean;
 }
 
 export interface Court {

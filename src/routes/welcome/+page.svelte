@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { ArrowLeft, ArrowRight, Check } from '@lucide/svelte';
+	import { ArrowLeft, ArrowRight, Check, Palmtree } from '@lucide/svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import LangSwitch from '#lib/components/LangSwitch.svelte';
 	import { findOpportunities } from '#lib/match.js';
@@ -17,6 +17,7 @@
 	let name = $state(untrack(() => data.user.name));
 	let games = $state(untrack(() => data.user.gamesPerWeek));
 	let picked = $state<string[]>(untrack(() => data.initial));
+	let away = $state(untrack(() => data.user.away));
 
 	const PARTS = Object.keys(DAY_PARTS) as DayPart[];
 	const days = $derived(Array.from({ length: 7 }, (_, i) => addDays(weekStart(data.today), i)));
@@ -32,7 +33,7 @@
 		const me = data.user.id;
 		const out: Record<string, number[]> = {};
 		for (const date of data.match.dates) {
-			const add = PARTS.filter((p) => has(key(weekday(date), p)))
+			const add = PARTS.filter((p) => !away && has(key(weekday(date), p)))
 				.flatMap(partSlots)
 				.filter((s) => date > data.today || s >= data.nowSlot);
 			const slots = new Set([...(data.match.availability[date]?.[me] ?? []), ...add]);
@@ -98,6 +99,7 @@
 			<input type="hidden" name="name" value={name} />
 			<input type="hidden" name="gamesPerWeek" value={games} />
 			{#each picked as k (k)}<input type="hidden" name="block" value={k} />{/each}
+			{#if away}<input type="hidden" name="away" value="on" />{/if}
 
 			<p class="eyebrow text-faint">{t().welcome.stepOf(step + 1, STEPS)}</p>
 
@@ -137,13 +139,23 @@
 			{:else if step === 2}
 				<h1 class="title mt-2">{t().welcome.timesTitle}</h1>
 				<p class="mt-2 max-w-xl text-sm text-muted">{t().welcome.timesBody}</p>
-				<div class="mt-6 flex flex-wrap gap-2">
+				<label
+					class="mt-6 flex cursor-pointer items-start gap-3 border px-4 py-3 transition-colors has-focus-visible:outline has-focus-visible:outline-fg
+						{away ? 'border-ball/60 bg-panel' : 'border-dashed border-line-strong hover:border-muted'}"
+				>
+					<input type="checkbox" class="mt-0.5 size-4 accent-ball" bind:checked={away} data-break />
+					<span>
+						<span class="flex items-center gap-2 text-sm font-medium"><Palmtree class="size-3.5 {away ? 'text-ball' : 'text-muted'}" /> {t().welcome.breakToggle}</span>
+						<span class="mt-0.5 block text-xs text-muted">{t().welcome.breakToggleHint}</span>
+					</span>
+				</label>
+				<div class="mt-4 flex flex-wrap gap-2 {away ? 'pointer-events-none opacity-30' : ''}" inert={away}>
 					<button type="button" class="btn-ghost" onclick={() => preset(EVENINGS)}>{t().welcome.presetEvenings}</button>
 					<button type="button" class="btn-ghost" onclick={() => preset(WEEKENDS)}>{t().welcome.presetWeekends}</button>
 					<button type="button" class="btn-quiet" onclick={() => (picked = [])} disabled={picked.length === 0}>{t().welcome.presetClear}</button>
 				</div>
 
-				<div class="mt-4 grid gap-6 lg:grid-cols-[1fr_200px]">
+				<div class="mt-4 grid gap-6 lg:grid-cols-[1fr_200px] {away ? 'pointer-events-none opacity-30' : ''}" inert={away}>
 					<div class="card overflow-x-auto p-2 sm:p-3">
 						<div class="grid min-w-[340px] gap-px" style="grid-template-columns: 5.5rem repeat(7, minmax(0, 1fr));">
 							<div></div>
@@ -208,7 +220,9 @@
 					<div class="px-5 py-3.5">
 						<dt class="eyebrow text-muted">{t().welcome.usualTimes}</dt>
 						<dd class="mt-2 text-sm">
-							{#if summary.length === 0}
+							{#if away}
+								<span class="flex items-center gap-2 text-muted"><Palmtree class="size-3.5 shrink-0 text-ball" /> {t().welcome.breakPicked}</span>
+							{:else if summary.length === 0}
 								<span class="text-muted">{t().welcome.noTimes}</span>
 							{:else}
 								<ul class="space-y-1">

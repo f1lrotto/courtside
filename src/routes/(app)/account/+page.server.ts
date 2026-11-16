@@ -2,7 +2,9 @@ import { fail } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth, MIN_PASSWORD } from '#lib/server/auth.js';
 import { MAX_GAMES } from '#lib/format.js';
-import { db } from '#lib/server/db.js';
+import { db, tx } from '#lib/server/db.js';
+import { setAway } from '#lib/server/data.js';
+import { SLOT_MINUTES, minutesNowLocal, todayLocal } from '#lib/time.js';
 import { dict } from '#lib/i18n.js';
 import type { Actions } from './$types';
 
@@ -23,6 +25,12 @@ export const actions: Actions = {
 			locals.user!.id
 		);
 		return { profile: { ok: true } };
+	},
+
+	away: async ({ request, locals }) => {
+		const away = (await request.formData()).get('away') === 'on';
+		tx(() => setAway(locals.user!.id, away, todayLocal(), Math.ceil(minutesNowLocal() / SLOT_MINUTES)));
+		return { away: { back: !away } };
 	},
 
 	password: async ({ request, locals }) => {

@@ -5,9 +5,10 @@ import { VENUES } from '../venues';
 import { weekStart } from '../time';
 
 export function people(): Person[] {
-	return db
-		.prepare(`SELECT id, name, coalesce("gamesPerWeek", 2) AS gamesPerWeek FROM "user" ORDER BY name COLLATE NOCASE`)
-		.all() as unknown as Person[];
+	const rows = db
+		.prepare(`SELECT id, name, coalesce("gamesPerWeek", 2) AS gamesPerWeek, coalesce(away, 0) AS away FROM "user" ORDER BY name COLLATE NOCASE`)
+		.all() as unknown as (Omit<Person, 'away'> & { away: number })[];
+	return rows.map((r) => ({ ...r, away: r.away === 1 }));
 }
 
 /** date -> userId -> slots */
@@ -40,6 +41,17 @@ export function notPlaying(monday: string): number[] {
 export function setNotPlaying(userId: number, monday: string, off: boolean) {
 	if (off) db.prepare('INSERT OR IGNORE INTO weeks_off (user_id, week) VALUES (?, ?)').run(userId, monday);
 	else db.prepare('DELETE FROM weeks_off WHERE user_id = ? AND week = ?').run(userId, monday);
+}
+
+/**
+ * On a break, every week counts as not playing unless you mark times in it, so going on a break
+ * clears the times you marked from now on (from the given slot today).
+ */
+export function setAway(userId: number, away: boolean, today: string, nowSlot: number) {
+	db.prepare(`UPDATE "user" SET away = ?, "updatedAt" = ? WHERE id = ?`).run(away ? 1 : 0, new Date().toISOString(), userId);
+	if (away) {
+		db.prepare('DELETE FROM availability WHERE user_id = ? AND (date > ? OR (date = ? AND slot >= ?))').run(userId, today, today, nowSlot);
+	}
 }
 
 const venueOrder = (v: string) => VENUES.findIndex((x) => x.id === v);

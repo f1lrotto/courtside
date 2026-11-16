@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { MAX_GAMES } from '#lib/format.js';
 import { dict } from '#lib/i18n.js';
-import { availability, courts, freeBlocks, people, prices, setAvailability } from '#lib/server/data.js';
+import { availability, courts, freeBlocks, people, prices, setAvailability, setAway } from '#lib/server/data.js';
 import { db, tx } from '#lib/server/db.js';
 import { HORIZON_DAYS } from '#lib/server/scraper.js';
 import { DAY_PARTS, SLOT_MINUTES, addDays, minutesNowLocal, partSlots, todayLocal, weekday, type DayPart } from '#lib/time.js';
@@ -56,7 +56,9 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const games = Number(form.get('gamesPerWeek'));
-		const picked = form.getAll('block').map(String);
+		const away = form.get('away') === 'on';
+		// on a break, no usual times get added
+		const picked = away ? [] : form.getAll('block').map(String);
 		if (!name || name.length > 40) return fail(400, { error: m.signup.badName });
 		if (!Number.isInteger(games) || games < 1 || games > MAX_GAMES) return fail(400, { error: m.account.gamesRange(MAX_GAMES) });
 
@@ -90,6 +92,7 @@ export const actions: Actions = {
 				me
 			);
 			setAvailability(me, days);
+			setAway(me, away, today, nowSlot);
 		});
 		redirect(303, '/?welcome=done');
 	}

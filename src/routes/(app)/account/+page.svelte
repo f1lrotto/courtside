@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { Palmtree } from '@lucide/svelte';
 	import { MAX_GAMES } from '#lib/format.js';
 	import LangSwitch from '#lib/components/LangSwitch.svelte';
 	import { t } from '#lib/i18n.js';
@@ -47,6 +48,27 @@
 			{/if}
 			<button class="btn-primary h-9">{t().account.saveProfile}</button>
 		</form>
+	</section>
+
+	<section class="card {data.user.away ? 'border-ball/40!' : ''}" id="break">
+		<header class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+			<div class="max-w-md">
+				<h2 class="eyebrow flex items-center gap-2">
+					<Palmtree class="size-3.5 {data.user.away ? 'text-ball' : 'text-muted'}" />
+					{data.user.away ? t().account.breakOnLabel : t().account.breakTitle}
+				</h2>
+				<p class="mt-0.5 text-xs text-muted">{t().account.breakHint}</p>
+				{#if form?.away?.back}
+					<p class="mt-2 text-xs text-free" role="status">{t().account.breakBack} <a href="/availability" class="underline underline-offset-2">{t().nav.availability} →</a></p>
+				{/if}
+			</div>
+			<form method="POST" action="?/away" use:enhance>
+				<input type="hidden" name="away" value={data.user.away ? 'off' : 'on'} />
+				<button class="{data.user.away ? 'btn-primary' : 'btn-ghost'} h-9" data-break-toggle>
+					{data.user.away ? t().account.breakEnd : t().account.breakStart}
+				</button>
+			</form>
+		</header>
 	</section>
 
 	<section class="card">

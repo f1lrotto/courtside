@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CalendarPlus, Check, Users } from '@lucide/svelte';
+	import { CalendarPlus, Check, Palmtree, Users } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import OpportunityCard from '#lib/components/OpportunityCard.svelte';
@@ -92,6 +92,19 @@
 		</div>
 		<a href="/availability" class="eyebrow text-fg">{t().nav.availability} →</a>
 	</div>
+{:else if !data.meMarked && data.user.away}
+	<a
+		href="/account#break"
+		class="mt-6 flex items-center gap-4 border border-ball/40 bg-panel px-4 py-3 transition-colors hover:border-ball"
+		data-break-banner
+	>
+		<Palmtree class="size-5 shrink-0 text-ball" />
+		<div class="min-w-0 flex-1">
+			<div class="text-sm font-medium">{t().matches.breakTitle}</div>
+			<div class="text-xs text-muted">{t().matches.breakBody}</div>
+		</div>
+		<span class="eyebrow text-fg">{t().matches.breakCta}</span>
+	</a>
 {:else if !data.meMarked}
 	<a
 		href="/welcome"
