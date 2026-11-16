@@ -1,0 +1,129 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import 'tailwindcss';
+
+@theme {
+	--font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+	--color-bg: #000000;
+	--color-panel: #070707;
+	--color-panel-2: #0e0e0e;
+	--color-hover: #161616;
+	--color-line: #1a1a1a;
+	--color-line-strong: #2b2b2b;
+	--color-fg: #fafafa;
+	--color-muted: #a1a1a1;
+	--color-faint: #666666;
+
+	/* padel ball */
+	--color-ball: #d4f25a;
+	--color-ball-dim: rgb(212 242 90 / 0.1);
+	--color-free: #4ade80;
+	--color-busy: #3a2a2d;
+	--color-danger: #ff5c5c;
+}
+
+@layer base {
+	html {
+		color-scheme: dark;
+		background: var(--color-bg);
+		color: var(--color-fg);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+		font-feature-settings: 'ss01', 'cv11';
+	}
+	::selection {
+		background: var(--color-fg);
+		color: #000;
+	}
+	:focus-visible {
+		outline: 1px solid var(--color-fg);
+		outline-offset: 2px;
+	}
+}
+
+/* Mono, uppercase micro-label used for nav, section titles, chips and buttons */
+@utility eyebrow {
+	@apply font-mono text-[11px] font-normal tracking-[0.1em] uppercase;
+}
+
+/* Large, light, tightly tracked page title */
+@utility title {
+	@apply text-[32px] leading-[1.1] font-normal tracking-[-0.035em] sm:text-[40px];
+}
+
+@utility btn {
+	@apply eyebrow inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 border px-3 whitespace-nowrap transition-colors duration-100 select-none disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+@utility btn-primary {
+	@apply btn border-fg bg-fg text-black not-disabled:hover:border-[#d4d4d4] not-disabled:hover:bg-[#d4d4d4];
+}
+
+@utility btn-ghost {
+	@apply btn border-line-strong bg-transparent text-fg not-disabled:hover:bg-hover;
+}
+
+@utility btn-quiet {
+	@apply btn border-transparent text-muted hover:bg-hover hover:text-fg;
+}
+
+@utility input {
+	@apply h-10 w-full border border-line-strong bg-panel px-3 text-base text-fg transition-colors placeholder:text-faint focus:border-muted focus:outline-none sm:text-sm;
+}
+
+@utility label {
+	@apply eyebrow mb-2 block text-muted;
+}
+
+@utility card {
+	@apply border border-line bg-panel;
+}
+
+/* Hairlines that run past the corners, like a technical drawing */
+@utility frame {
+	position: relative;
+	&::before,
+	&::after {
+		content: '';
+		position: absolute;
+		pointer-events: none;
+	}
+	&::before {
+		inset: -1px -20px;
+		border-block: 1px solid var(--color-line-strong);
+		mask: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+	}
+	&::after {
+		inset: -20px -1px;
+		border-inline: 1px solid var(--color-line-strong);
+		mask: linear-gradient(transparent, #000 20px, #000 calc(100% - 20px), transparent);
+	}
+}
+
+/* Section label followed by a rule to the right edge */
+@utility rule {
+	@apply flex items-center gap-3 after:h-px after:flex-1 after:bg-line;
+}
+
+@utility chip {
+	@apply eyebrow inline-flex h-5 items-center gap-1 border border-line-strong px-1.5 text-[10px] text-muted;
+}
+
+@utility kbd {
+	@apply border border-line-strong bg-panel-2 px-1.5 py-0.5 font-mono text-[11px] text-muted;
+}
+
+/* Unlayered so it wins over the padding utility on .input */
+select.input {
+	appearance: none;
+	padding-right: 1.75rem;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238f8f8f' stroke-width='2.5' stroke-linecap='square'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.55rem center;
+}
+
+[data-slot] {
+	-webkit-touch-callout: none;
+}
