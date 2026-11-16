@@ -1,4 +1,4 @@
-import { availability, blocks, courts, people } from '#lib/server/data.js';
+import { availability, blocks, courts, notPlaying, people } from '#lib/server/data.js';
 import { courtKey } from '#lib/match.js';
 import { addDays, isDate, todayLocal, weekDates, weekStart } from '#lib/time.js';
 import type { PageServerLoad } from './$types';
@@ -26,6 +26,7 @@ export const load: PageServerLoad = ({ url, locals }) => {
 			for (const s of slots) ((others[date] ??= {})[s] ??= []).push(names.get(Number(uid)) ?? '?');
 		}
 	}
+	const off = notPlaying(monday);
 	const filledIn = everyone.filter((p) => dates.some((d) => (avail[d]?.[p.id] ?? []).length > 0));
 
 	// date -> slot -> number of doubles courts free (only days the scraper has covered)
@@ -50,6 +51,7 @@ export const load: PageServerLoad = ({ url, locals }) => {
 		prevWeek: Object.fromEntries(prevDates.map((d, i) => [dates[i], prev[d]?.[me] ?? []])),
 		others,
 		filledIn,
+		notPlaying: off,
 		people: everyone,
 		courtsFree
 	};

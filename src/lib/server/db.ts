@@ -29,6 +29,13 @@ CREATE TABLE IF NOT EXISTS availability (
 	PRIMARY KEY (user_id, date, slot)
 );
 
+-- weeks someone said they're not playing, so an empty week still counts as filled in
+CREATE TABLE IF NOT EXISTS weeks_off (
+	user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+	week TEXT NOT NULL, -- the Monday
+	PRIMARY KEY (user_id, week)
+);
+
 CREATE TABLE IF NOT EXISTS courts (
 	venue TEXT NOT NULL,
 	court_id TEXT NOT NULL,

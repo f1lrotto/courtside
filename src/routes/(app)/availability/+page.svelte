@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronLeft, ChevronRight, Copy, Eraser, Moon, Check, LoaderCircle, TriangleAlert, Undo2 } from '@lucide/svelte';
+	import { Ban, ChevronLeft, ChevronRight, Copy, Eraser, Moon, Check, LoaderCircle, TriangleAlert, Undo2 } from '@lucide/svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import { DAY_SLOTS, FIRST_SLOT, LAST_SLOT, SLOT_MINUTES, addDays, minutesNowLocal, slotLabel, weekStart } from '#lib/time.js';
 	import { fmtDayMonth, fmtWeekday, t } from '#lib/i18n.js';
@@ -13,6 +13,8 @@
 
 	// Re-derived on week navigation; reassigned locally while painting.
 	let sel = $derived(toSel(data.mine));
+	// "I'm not playing this week": counts as filled in with no times marked
+	let off = $derived(data.notPlaying.includes(data.user.id));
 
 	const nowSlot = Math.ceil(minutesNowLocal() / SLOT_MINUTES);
 	const locked = (date: string, slot: number) => date < data.today || (date === data.today && slot < nowSlot);
@@ -157,17 +159,21 @@
 	// ---- saving: one request at a time, in order ----
 	let status = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
 	let queue: Promise<void> = Promise.resolve();
-	function save(dates: string[]) {
+	// offNext sets "not playing"; otherwise marking any time clears it, as the server does
+	function save(dates: string[], offNext?: boolean) {
 		dates = dates.filter((d) => d >= data.today);
-		if (dates.length === 0) return;
+		if (dates.length === 0 && offNext === undefined) return;
 		const days = Object.fromEntries(dates.map((d) => [d, [...sel[d]].sort((a, b) => a - b)]));
+		const notPlaying = offNext === undefined ? undefined : { week: data.monday, value: offNext };
+		if (offNext !== undefined) off = offNext;
+		else if (Object.values(days).some((s) => s.length > 0)) off = false;
 		status = 'saving';
 		queue = queue.then(async () => {
 			try {
 				const r = await fetch('/api/availability', {
 					method: 'PUT',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ days })
+					body: JSON.stringify({ days, notPlaying })
 				});
 				status = r.ok ? 'saved' : 'error';
 			} catch {
@@ -182,7 +188,7 @@
 	});
 
 	// ---- bulk actions, each undoable for a few seconds ----
-	let undo = $state<{ label: string; before: Sel } | null>(null);
+	let undo = $state<{ label: string; before: Sel; off: boolean } | null>(null);
 	let undoTimer: ReturnType<typeof setTimeout> | undefined;
 
 	function setWeek(label: string, fn: (date: string, i: number) => Set<number>) {
@@ -194,19 +200,32 @@
 		});
 		const changed = data.dates.filter((d) => !sameSet(before[d], next[d]));
 		if (changed.length === 0) return;
+		const wasOff = off;
 		sel = next;
 		save(changed);
+		offerUndo(label, before, wasOff);
+	}
+	function offerUndo(label: string, before: Sel, wasOff: boolean) {
 		clearTimeout(undoTimer);
-		undo = { label, before };
+		undo = { label, before, off: wasOff };
 		undoTimer = setTimeout(() => (undo = null), 6000);
 	}
 	function doUndo() {
 		if (!undo) return;
-		const { before } = undo;
+		const { before, off: wasOff } = undo;
 		undo = null;
 		const changed = data.dates.filter((d) => !sameSet(before[d], sel[d]));
 		sel = before;
-		save(changed);
+		save(changed, wasOff);
+	}
+
+	// Not playing clears the times still ahead; marking a time later undoes it.
+	function toggleOff() {
+		const before = sel;
+		const wasOff = off;
+		if (!wasOff) sel = Object.fromEntries(data.dates.map((d) => [d, new Set([...sel[d]].filter((s) => locked(d, s)))]));
+		save(data.dates.filter((d) => !sameSet(before[d], sel[d])), !wasOff);
+		if (!wasOff) offerUndo(t().avail.didNotPlay, before, wasOff);
 	}
 
 	const EVENING = DAY_SLOTS.filter((s) => s >= 36); // 18:00–22:00
@@ -224,7 +243,7 @@
 	const hasPrev = $derived(Object.values(data.prevWeek).some((s) => s.length > 0));
 	const total = $derived(Object.values(sel).reduce((n, s) => n + s.size, 0) * (SLOT_MINUTES / 60));
 	const filledIn = $derived(
-		data.people.filter((p) => (p.id === data.user.id ? total > 0 : data.filledIn.some((q) => q.id === p.id)))
+		data.people.filter((p) => (p.id === data.user.id ? total > 0 || off : data.filledIn.some((q) => q.id === p.id) || data.notPlaying.includes(p.id)))
 	);
 	const missing = $derived(data.people.filter((p) => !filledIn.some((q) => q.id === p.id)));
 
@@ -278,6 +297,9 @@
 		<Copy class="size-3.5" /> {t().avail.copyLast}
 	</button>
 	<button class="btn-ghost" onclick={clearWeek} disabled={total === 0 || !editable}><Eraser class="size-3.5" /> {t().avail.clear}</button>
+	<button class="btn-ghost {off ? 'border-fg! bg-fg! text-black!' : ''}" onclick={toggleOff} disabled={!editable} aria-pressed={off} title={t().avail.notPlayingTitle}>
+		<Ban class="size-3.5" /> {t().avail.notPlaying}
+	</button>
 	{#if !editable}<span class="text-xs text-faint">{t().avail.over}</span>{/if}
 </div>
 
@@ -372,7 +394,11 @@
 					<li class="flex items-center gap-2 text-[13px]">
 						<Avatar id={p.id} name={p.name} size={20} me={p.id === data.user.id} />
 						{p.name}{#if p.id === data.user.id}<span class="text-faint">&nbsp;{t().common.youParen}</span>{/if}
-						<Check class="ml-auto size-3.5 text-free" />
+						{#if p.id === data.user.id ? off : data.notPlaying.includes(p.id)}
+							<span class="ml-auto text-[11px] text-muted">{t().avail.notPlayingShort}</span>
+						{:else}
+							<Check class="ml-auto size-3.5 text-free" />
+						{/if}
 					</li>
 				{/each}
 				{#each missing as p (p.id)}

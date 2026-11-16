@@ -2,6 +2,7 @@ import { db } from './db';
 import type { Court, Person } from '../match';
 import { courtKey } from '../match';
 import { VENUES } from '../venues';
+import { weekStart } from '../time';
 
 export function people(): Person[] {
 	return db
@@ -20,13 +21,25 @@ export function availability(dates: string[]): Record<string, Record<number, num
 	return out;
 }
 
+/** marking any time in a week means playing that week, so it drops that week's "not playing" */
 export function setAvailability(userId: number, days: Record<string, number[]>) {
 	const del = db.prepare('DELETE FROM availability WHERE user_id = ? AND date = ?');
 	const ins = db.prepare('INSERT OR IGNORE INTO availability (user_id, date, slot) VALUES (?, ?, ?)');
 	for (const [date, slots] of Object.entries(days)) {
 		del.run(userId, date);
 		for (const s of slots) ins.run(userId, date, s);
+		if (slots.length > 0) setNotPlaying(userId, weekStart(date), false);
 	}
+}
+
+/** ids of people not playing the week starting on this Monday */
+export function notPlaying(monday: string): number[] {
+	return (db.prepare('SELECT user_id FROM weeks_off WHERE week = ?').all(monday) as { user_id: number }[]).map((r) => r.user_id);
+}
+
+export function setNotPlaying(userId: number, monday: string, off: boolean) {
+	if (off) db.prepare('INSERT OR IGNORE INTO weeks_off (user_id, week) VALUES (?, ?)').run(userId, monday);
+	else db.prepare('DELETE FROM weeks_off WHERE user_id = ? AND week = ?').run(userId, monday);
 }
 
 const venueOrder = (v: string) => VENUES.findIndex((x) => x.id === v);
