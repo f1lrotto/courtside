@@ -110,7 +110,9 @@
 					{t().courts.bookingPage} <ExternalLink class="size-3" />
 				</a>
 			</header>
-			<div class="relative overflow-x-auto p-3" {@attach toEvening}>
+			<!-- padding sits outside the scroller, so the sticky court column covers its whole left edge -->
+			<div class="p-3">
+			<div class="relative overflow-x-auto" {@attach toEvening}>
 				<div class="grid min-w-[720px]" style="grid-template-columns: 7.5rem repeat({DAY_SLOTS.length}, minmax(0,1fr));">
 					<div data-label class="sticky left-0 z-10 bg-panel"></div>
 					{#each DAY_SLOTS as s (s)}
@@ -144,7 +146,8 @@
 						{/each}
 					{/each}
 				</div>
-				<div class="eyebrow sticky left-0 mt-3 flex gap-4 text-[10px] text-faint">
+			</div>
+				<div class="eyebrow mt-3 flex gap-4 text-[10px] text-faint">
 					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-ball/30"></span>{t().courts.legendFree}</span>
 					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-white/[0.08]"></span>{t().courts.legendBooked}</span>
 				</div>
