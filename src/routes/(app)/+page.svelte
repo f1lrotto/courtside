@@ -88,9 +88,9 @@
 		<span class="grid size-6 shrink-0 place-items-center bg-ball text-black"><Check class="size-3.5" /></span>
 		<div class="min-w-0 flex-1">
 			<div class="text-sm font-medium">{t().matches.welcomeTitle}</div>
-			<div class="text-xs text-muted">{t().matches.welcomeBody}</div>
+			<div class="text-xs text-muted">{data.user.away ? t().welcome.breakPicked : t().matches.welcomeBody}</div>
 		</div>
-		<a href="/availability" class="eyebrow text-fg">{t().nav.availability} →</a>
+		{#if !data.user.away}<a href="/availability" class="eyebrow text-fg">{t().nav.availability} →</a>{/if}
 	</div>
 {:else if !data.meMarked && data.user.away}
 	<a
@@ -107,7 +107,7 @@
 	</a>
 {:else if !data.meMarked}
 	<a
-		href="/welcome"
+		href="/availability"
 		class="mt-6 flex items-center gap-4 border border-dashed border-line-strong bg-panel px-4 py-3 transition-colors hover:border-muted"
 	>
 		<CalendarPlus class="size-5 shrink-0 text-ball" />

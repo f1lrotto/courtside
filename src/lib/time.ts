@@ -69,15 +69,3 @@ export function isDate(s: unknown): s is string {
 /** "17.11.2026", the format Paysy's ?date= parameter takes */
 export const paysyDate = (date: string) => date.split('-').reverse().join('.');
 
-/** the blocks onboarding offers, as [first slot, end slot) */
-export const DAY_PARTS = {
-	morning: [16, 24], // 08:00–12:00
-	midday: [24, 30], // 12:00–15:00
-	afternoon: [30, 36], // 15:00–18:00
-	evening: [36, 44] // 18:00–22:00
-} as const;
-export type DayPart = keyof typeof DAY_PARTS;
-export const partSlots = (p: DayPart) => {
-	const [a, b] = DAY_PARTS[p];
-	return Array.from({ length: b - a }, (_, i) => a + i);
-};

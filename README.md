@@ -17,7 +17,7 @@ The **Plan** tab picks a set of games per week: each person sets how many games 
 ## Screens
 
 - **Sign in / Sign up**: invite-only accounts
-- **Welcome** (/welcome): guided setup right after sign-up: language and name, games per week and match size, and usual play times (with how many friends are often free then and live counts of the games you'd join), or "I'm on a break for now". It adds those times to the next two weeks; it can be skipped and re-run from Account
+- **Welcome** (/welcome): guided setup right after sign-up: language and name, games per week and match size, and "I'm on a break for now"; it can be skipped and re-run from Account
 - **Matches**: Plan, Doubles, Singles and One short tabs, game length, start times, prices and Book links
 - **My availability**: a weekly grid you paint, with undo, an "I'm not playing this week" button (counts as filled in), your match size, and each person's match size (when not both) and status this week: filled in, not playing, on a break, or not yet
 - **Courts**: a two-week heatmap and a per-court timeline for each day
