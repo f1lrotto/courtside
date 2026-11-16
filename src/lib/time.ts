@@ -66,13 +66,18 @@ export function isDate(s: unknown): s is string {
 	return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && addDays(s, 0) === s;
 }
 
-const dayFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' });
-const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-const utc = (date: string) => new Date(date + 'T12:00:00Z');
-
-export const fmtWeekday = (date: string) => dayFmt.format(utc(date));
-export const fmtDayMonth = (date: string) => dateFmt.format(utc(date));
-export const fmtDay = (date: string) => `${fmtWeekday(date)} ${fmtDayMonth(date)}`;
-
 /** "17.11.2026", the format Paysy's ?date= parameter takes */
 export const paysyDate = (date: string) => date.split('-').reverse().join('.');
+
+/** the blocks onboarding offers, as [first slot, end slot) */
+export const DAY_PARTS = {
+	morning: [16, 24], // 08:00–12:00
+	midday: [24, 30], // 12:00–15:00
+	afternoon: [30, 36], // 15:00–18:00
+	evening: [36, 44] // 18:00–22:00
+} as const;
+export type DayPart = keyof typeof DAY_PARTS;
+export const partSlots = (p: DayPart) => {
+	const [a, b] = DAY_PARTS[p];
+	return Array.from({ length: b - a }, (_, i) => a + i);
+};

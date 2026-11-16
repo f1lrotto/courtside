@@ -6,6 +6,7 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { building, dev } from '$app/env';
 import { getRequestEvent } from '$app/server';
 import { db } from './db';
+import { dict } from '../i18n';
 
 export type Role = 'admin' | 'user';
 
@@ -47,7 +48,7 @@ export const auth = betterAuth({
 						| { role: Role }
 						| undefined;
 					if (!invite) {
-						throw new APIError('FORBIDDEN', { message: "This email hasn't been invited yet. Ask an admin to add it." });
+						throw new APIError('FORBIDDEN', { message: dict(getRequestEvent().locals.lang).signup.notInvited });
 					}
 					return { data: { ...user, role: invite.role } };
 				},

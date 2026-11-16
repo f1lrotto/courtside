@@ -51,7 +51,6 @@ export const load: PageServerLoad = ({ url, locals }) => {
 		others,
 		filledIn,
 		people: everyone,
-		courtsFree,
-		welcome: url.searchParams.has('welcome')
+		courtsFree
 	};
 };

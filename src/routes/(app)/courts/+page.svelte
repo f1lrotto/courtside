@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ExternalLink } from '@lucide/svelte';
 	import { courtKey } from '#lib/match.js';
-	import { DAY_SLOTS, addDays, fmtDay, fmtDayMonth, fmtWeekday, slotLabel } from '#lib/time.js';
-	import { VENUES, bookingUrl, courtLabel } from '#lib/venues.js';
-	import { euro, timeAgo } from '#lib/format.js';
+	import { DAY_SLOTS, addDays, slotLabel } from '#lib/time.js';
+	import { VENUES, bookingUrl } from '#lib/venues.js';
+	import { courtLabel, euro, fmtDay, fmtDayMonth, fmtWeekday, t, timeAgo } from '#lib/i18n.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,7 +16,7 @@
 			: n === 0
 				? 'rgb(255 255 255 / 0.03)'
 				: `rgb(212 242 90 / ${0.08 + 0.62 * Math.min(n / Math.max(data.doublesCount, 1), 1)})`;
-	const dayLabel = (d: string) => (d === data.today ? 'Today' : d === addDays(data.today, 1) ? 'Tomorrow' : fmtWeekday(d));
+	const dayLabel = (d: string) => (d === data.today ? t().common.today : d === addDays(data.today, 1) ? t().common.tomorrow : fmtWeekday(d));
 	const dayHref = (d: string) => `?day=${d}#day-detail`;
 
 	const venues = $derived(
@@ -35,20 +35,20 @@
 	}
 </script>
 
-<svelte:head><title>Courts · Courtside</title></svelte:head>
+<svelte:head><title>{t().courts.title} · Courtside</title></svelte:head>
 
-<h1 class="title">Courts</h1>
-<p class="mt-1 text-sm text-muted">Live availability at Aurial Padel Bratislava and Oura Padel for the next two weeks.</p>
+<h1 class="title">{t().courts.title}</h1>
+<p class="mt-1 text-sm text-muted">{t().courts.sub}</p>
 
-<section class="card mt-8 p-4" aria-label="Two-week overview">
+<section class="card mt-8 p-4" aria-label={t().courts.overview}>
 	<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-		<h2 class="eyebrow">Free doubles courts <span class="text-faint">· pick a day for details</span></h2>
+		<h2 class="eyebrow">{t().courts.freeDoubles} <span class="text-faint">· {t().courts.pickDay}</span></h2>
 		<div class="eyebrow flex items-center gap-2 text-[10px] text-faint">
-			none
+			{t().courts.none}
 			<span class="flex h-2.5 w-24 overflow-hidden border border-line-strong">
 				{#each [0, 1, 3, 5, 8] as n (n)}<span class="flex-1" style="background:{heat(n)}"></span>{/each}
 			</span>
-			many
+			{t().courts.many}
 		</div>
 	</div>
 	<div class="relative mt-3 overflow-x-auto" {@attach toEvening}>
@@ -75,19 +75,19 @@
 						tabindex="-1"
 						class="my-px h-[18px] border-l border-panel {d === data.day ? 'outline outline-1 -outline-offset-1 outline-white/10' : ''}"
 						style="background:{past(d, s) ? 'transparent' : heat(n)}"
-						title="{fmtDay(d)} {slotLabel(s)}: {n === undefined ? 'not synced' : `${n} doubles court${n === 1 ? '' : 's'} free`}"
+						title="{fmtDay(d)} {slotLabel(s)}: {n === undefined ? t().courts.notSyncedCell : t().common.courtsOpen(n)}"
 						aria-hidden="true"
 					></a>
 				{/each}
 			{/each}
 		</div>
 	</div>
-	<p class="mt-2 text-[11px] text-faint sm:hidden">Swipe sideways for other hours.</p>
+	<p class="mt-2 text-[11px] text-faint sm:hidden">{t().courts.swipe}</p>
 </section>
 
 <div id="day-detail" class="mt-10 flex scroll-mt-28 flex-wrap items-baseline justify-between gap-2">
 	<h2 class="text-2xl tracking-[-0.03em]">{fmtDay(data.day)}</h2>
-	<p class="text-xs text-faint">Free slots link to the club's booking page for that day.</p>
+	<p class="text-xs text-faint">{t().courts.detailHint}</p>
 </div>
 
 <div class="mt-4 space-y-6">
@@ -99,15 +99,15 @@
 				<h3 class="eyebrow text-fg">{v.name}</h3>
 				<span class="text-xs text-faint">
 					{#if st?.error}
-						<span class="text-danger">Last sync failed: {st.error}</span>{#if st.fetched_at}&nbsp;· showing data from {timeAgo(st.fetched_at)}{/if}
+						<span class="text-danger">{t().courts.syncFailed(st.error)}</span>{#if st.fetched_at}&nbsp;· {t().courts.showingFrom(timeAgo(st.fetched_at))}{/if}
 					{:else if st?.fetched_at}
-						synced {timeAgo(st.fetched_at)}
+						{t().courts.syncedAgo(timeAgo(st.fetched_at))}
 					{:else}
-						not synced yet
+						{t().courts.notSyncedYet}
 					{/if}
 				</span>
 				<a href={bookingUrl(v.id, data.day)} target="_blank" rel="noopener noreferrer" class="btn-ghost ml-auto h-7">
-					Booking page <ExternalLink class="size-3" />
+					{t().courts.bookingPage} <ExternalLink class="size-3" />
 				</a>
 			</header>
 			<div class="relative overflow-x-auto p-3" {@attach toEvening}>
@@ -119,8 +119,8 @@
 					{#each courts as c (courtKey(c))}
 						{@const key = courtKey(c)}
 						<div class="sticky left-0 z-10 flex items-center justify-between gap-2 bg-panel pr-3 text-xs">
-							<span class="truncate" title={c.name}>{courtLabel(c.name)}{#if c.kind === 'singles'}<span class="ml-1 text-faint">2p</span>{/if}</span>
-							<span class="font-mono text-[10px] text-faint tabular-nums" title="Free hours left">{freeHours(key)}h</span>
+							<span class="truncate" title={c.name}>{courtLabel(c.name)}{#if c.kind === 'singles'}<span class="ml-1 text-faint">{t().courts.twoPlayers}</span>{/if}</span>
+							<span class="font-mono text-[10px] text-faint tabular-nums" title={t().courts.freeHours}>{freeHours(key)}h</span>
 						</div>
 						{#each DAY_SLOTS as s (s)}
 							{@const b = data.dayBlocks[key]?.[s]}
@@ -132,28 +132,28 @@
 									rel="noopener noreferrer"
 									tabindex="-1"
 									class="my-px h-6 border-l border-panel bg-ball/45 transition-colors hover:bg-ball"
-									title="{courtLabel(c.name)} {slotLabel(s)}–{slotLabel(s + 1)} free{b.price !== null ? ` · ${euro(b.price)}` : ''}"
-									aria-label="{courtLabel(c.name)} {slotLabel(s)} free, open booking page"
+									title="{t().courts.slotFree(courtLabel(c.name), slotLabel(s), slotLabel(s + 1))}{b.price !== null ? ` · ${euro(b.price)}` : ''}"
+									aria-label={t().courts.slotFreeAria(courtLabel(c.name), slotLabel(s))}
 								></a>
 							{:else}
 								<span
 									class="my-px h-6 border-l border-panel {b ? (gone ? 'bg-white/[0.02]' : 'bg-white/[0.08]') : 'bg-transparent'}"
-									title="{courtLabel(c.name)} {slotLabel(s)}: {gone ? 'past' : b ? 'booked' : 'no data'}"
+									title="{courtLabel(c.name)} {slotLabel(s)}: {gone ? t().courts.past : b ? t().courts.booked : t().courts.noData}"
 								></span>
 							{/if}
 						{/each}
 					{/each}
 				</div>
 				<div class="eyebrow sticky left-0 mt-3 flex gap-4 text-[10px] text-faint">
-					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-ball/30"></span>Free</span>
-					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-white/[0.08]"></span>Booked</span>
+					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-ball/30"></span>{t().courts.legendFree}</span>
+					<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 bg-white/[0.08]"></span>{t().courts.legendBooked}</span>
 				</div>
 			</div>
 		</section>
 	{:else}
 		<div class="border border-dashed border-line px-6 py-14 text-center text-sm text-muted">
-			Court data is syncing for the first time. Refresh in a minute.
+			{t().courts.firstSync}
 		</div>
 	{/each}
 </div>
-<p class="mt-6 text-xs text-faint">{fmtDayMonth(data.dates[0])} – {fmtDayMonth(data.dates.at(-1)!)} · refreshed every 15 minutes</p>
+<p class="mt-6 text-xs text-faint">{fmtDayMonth(data.dates[0])} – {fmtDayMonth(data.dates.at(-1)!)} · {t().courts.refreshed}</p>

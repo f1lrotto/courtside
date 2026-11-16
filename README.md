@@ -15,11 +15,16 @@ The **Plan** tab picks a set of games per week: each person sets how many games 
 ## Screens
 
 - **Sign in / Sign up**: invite-only accounts
+- **Welcome** (/welcome): guided setup right after sign-up: language and name, games per week, and usual play times (with how many friends are often free then and live counts of the games you'd join). It adds those times to the next two weeks; it can be skipped and re-run from Account
 - **Matches**: Plan, Doubles, Singles and One short tabs, game length, start times, prices and Book links
 - **My availability**: a weekly grid you paint, with undo and who has filled in
 - **Courts**: a two-week heatmap and a per-court timeline for each day
-- **Account**: name, games per week, password
+- **Account**: name, games per week, language, password, and the guided setup again
 - **Admin**: invites, roles, password resets, removing people, court sync status
+
+## Languages
+
+English and Slovak. The language comes from the `lang` cookie set by the EN/SK switch in the header, otherwise from the browser's Accept-Language (Czech gets Slovak), otherwise English. All UI text, dates, prices and server error messages live in `src/lib/i18n.ts`.
 
 ## How court availability is fetched
 

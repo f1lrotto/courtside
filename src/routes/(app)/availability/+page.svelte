@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { ChevronLeft, ChevronRight, Copy, Eraser, Moon, Check, LoaderCircle, TriangleAlert, Undo2 } from '@lucide/svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
-	import { DAY_SLOTS, FIRST_SLOT, LAST_SLOT, SLOT_MINUTES, addDays, fmtDayMonth, fmtWeekday, minutesNowLocal, slotLabel, weekStart } from '#lib/time.js';
+	import { DAY_SLOTS, FIRST_SLOT, LAST_SLOT, SLOT_MINUTES, addDays, minutesNowLocal, slotLabel, weekStart } from '#lib/time.js';
+	import { fmtDayMonth, fmtWeekday, t } from '#lib/i18n.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -213,12 +214,12 @@
 		data.dates.slice(0, 5).every((d) => EVENING.every((s) => locked(d, s) || sel[d].has(s)))
 	);
 	function toggleEvenings() {
-		if (eveningsOn) setWeek('Removed weekday evenings', (d, i) => new Set([...sel[d]].filter((s) => i >= 5 || !EVENING.includes(s))));
-		else setWeek('Added weekday evenings', (d, i) => (i < 5 ? new Set([...sel[d], ...EVENING]) : sel[d]));
+		if (eveningsOn) setWeek(t().avail.didRemoveEvenings, (d, i) => new Set([...sel[d]].filter((s) => i >= 5 || !EVENING.includes(s))));
+		else setWeek(t().avail.didAddEvenings, (d, i) => (i < 5 ? new Set([...sel[d], ...EVENING]) : sel[d]));
 	}
 	const copyLastWeek = () =>
-		setWeek('Copied last week', (d) => new Set([...sel[d], ...(data.prevWeek[d] ?? [])]));
-	const clearWeek = () => setWeek('Cleared the week', () => new Set());
+		setWeek(t().avail.didCopy, (d) => new Set([...sel[d], ...(data.prevWeek[d] ?? [])]));
+	const clearWeek = () => setWeek(t().avail.didClear, () => new Set());
 
 	const hasPrev = $derived(Object.values(data.prevWeek).some((s) => s.length > 0));
 	const total = $derived(Object.values(sel).reduce((n, s) => n + s.size, 0) * (SLOT_MINUTES / 60));
@@ -232,12 +233,12 @@
 	const detail = $derived.by(() => {
 		if (!inspect) return null;
 		const date = data.dates[inspect.di];
-		const who = [...(sel[date]?.has(inspect.s) ? ['You'] : []), ...(data.others[date]?.[inspect.s] ?? [])];
+		const who = [...(sel[date]?.has(inspect.s) ? [t().common.you] : []), ...(data.others[date]?.[inspect.s] ?? [])];
 		const c = data.courtsFree[date]?.[inspect.s];
 		return {
 			when: `${fmtWeekday(date)} ${fmtDayMonth(date)}, ${slotLabel(inspect.s)}`,
-			who: who.length ? who.join(', ') : 'Nobody free yet',
-			courts: c === undefined ? null : `${c} doubles court${c === 1 ? '' : 's'} open`
+			who: who.length ? who.join(', ') : t().avail.nobody,
+			courts: c === undefined ? null : t().common.courtsOpen(c)
 		};
 	});
 
@@ -249,42 +250,35 @@
 				: 'transparent';
 </script>
 
-<svelte:head><title>My availability · Courtside</title></svelte:head>
+<svelte:head><title>{t().avail.title} · Courtside</title></svelte:head>
 <svelte:window onpointerup={up} onpointercancel={() => { cancelPending(); up(); }} />
-
-{#if data.welcome}
-	<div class="mb-6 border border-dashed border-line-strong bg-panel px-4 py-3 text-sm">
-		<span class="font-medium">Welcome to Courtside.</span>
-		<span class="text-muted">Mark when you can play. It saves as you go.</span>
-	</div>
-{/if}
 
 <div class="flex flex-wrap items-end justify-between gap-4">
 	<div>
-		<h1 class="title">My availability</h1>
+		<h1 class="title">{t().avail.title}</h1>
 		<p class="mt-1 text-sm text-muted">
-			<span class="hidden sm:inline">Click or drag to mark when you can play; drag over marked cells to erase.</span>
-			<span class="sm:hidden">Tap a cell to mark it. Hold, then drag, to mark a range.</span>
+			<span class="hidden sm:inline">{t().avail.hintDesktop}</span>
+			<span class="sm:hidden">{t().avail.hintMobile}</span>
 		</p>
 	</div>
 	<div class="flex items-center gap-1">
-		<a class="btn-ghost w-8 px-0" href="?week={addDays(data.monday, -7)}" data-sveltekit-noscroll aria-label="Previous week"><ChevronLeft class="size-4" /></a>
-		<a class="btn-ghost min-w-36 tabular-nums" href="?week={thisWeek}" data-sveltekit-noscroll title="Jump to this week">
+		<a class="btn-ghost w-8 px-0" href="?week={addDays(data.monday, -7)}" data-sveltekit-noscroll aria-label={t().avail.prevWeek}><ChevronLeft class="size-4" /></a>
+		<a class="btn-ghost min-w-36 tabular-nums" href="?week={thisWeek}" data-sveltekit-noscroll title={t().avail.thisWeekJump}>
 			{fmtDayMonth(data.dates[0])} – {fmtDayMonth(data.dates[6])}
 		</a>
-		<a class="btn-ghost w-8 px-0" href="?week={addDays(data.monday, 7)}" data-sveltekit-noscroll aria-label="Next week"><ChevronRight class="size-4" /></a>
+		<a class="btn-ghost w-8 px-0" href="?week={addDays(data.monday, 7)}" data-sveltekit-noscroll aria-label={t().avail.nextWeek}><ChevronRight class="size-4" /></a>
 	</div>
 </div>
 
 <div class="mt-6 flex flex-wrap items-center gap-2">
 	<button class="btn-ghost {eveningsOn ? 'border-fg! bg-fg! text-black!' : ''}" onclick={toggleEvenings} disabled={!editable} aria-pressed={eveningsOn}>
-		<Moon class="size-3.5" /> Weekday evenings
+		<Moon class="size-3.5" /> {t().avail.evenings}
 	</button>
-	<button class="btn-ghost" onclick={copyLastWeek} disabled={!hasPrev || !editable} title={hasPrev ? 'Add last week’s times to this week' : 'Nothing marked last week'}>
-		<Copy class="size-3.5" /> Copy last week
+	<button class="btn-ghost" onclick={copyLastWeek} disabled={!hasPrev || !editable} title={hasPrev ? t().avail.copyTitle : t().avail.nothingLast}>
+		<Copy class="size-3.5" /> {t().avail.copyLast}
 	</button>
-	<button class="btn-ghost" onclick={clearWeek} disabled={total === 0 || !editable}><Eraser class="size-3.5" /> Clear week</button>
-	{#if !editable}<span class="text-xs text-faint">This week is over.</span>{/if}
+	<button class="btn-ghost" onclick={clearWeek} disabled={total === 0 || !editable}><Eraser class="size-3.5" /> {t().avail.clear}</button>
+	{#if !editable}<span class="text-xs text-faint">{t().avail.over}</span>{/if}
 </div>
 
 <div class="mt-4 grid gap-6 lg:grid-cols-[1fr_220px]">
@@ -295,7 +289,7 @@
 				<span class="text-muted">{detail.who}</span>
 				{#if detail.courts}<span class="text-faint">· {detail.courts}</span>{/if}
 			{:else}
-				<span class="text-faint">Point at, tap or focus a cell to see who's free then.</span>
+				<span class="text-faint">{t().avail.inspectHint}</span>
 			{/if}
 		</p>
 		<div
@@ -306,7 +300,7 @@
 			onpointermove={move}
 			onkeydown={gridKey}
 			role="grid"
-			aria-label="Weekly availability. Arrow keys move, Space toggles."
+			aria-label={t().avail.gridLabel}
 			tabindex="-1"
 		>
 			<div class="sticky top-[100px] z-10 bg-panel sm:top-14"></div>
@@ -330,7 +324,7 @@
 						data-slot={s}
 						role="gridcell"
 						aria-selected={on}
-						aria-label="{fmtWeekday(d)} {fmtDayMonth(d)} {slotLabel(s)}{on ? ', you are free' : ''}{n ? `, ${n} others free` : ''}{c === 0 ? ', no court open' : ''}"
+						aria-label="{fmtWeekday(d)} {fmtDayMonth(d)} {slotLabel(s)}{on ? t().avail.cellYou : ''}{n ? t().avail.cellOthers(n) : ''}{c === 0 ? t().avail.cellNoCourt : ''}"
 						aria-disabled={lock}
 						tabindex={focusCell.di === di && focusCell.s === s ? 0 : -1}
 						onclick={(e) => keyToggle(e, d, s)}
@@ -357,35 +351,35 @@
 
 	<aside class="space-y-4 text-sm">
 		<div class="card p-4">
-			<h2 class="eyebrow">Legend</h2>
+			<h2 class="eyebrow">{t().avail.legend}</h2>
 			<ul class="mt-3 space-y-2.5 text-xs text-muted">
-				<li class="flex items-center gap-2.5"><span class="h-3.5 w-5 bg-ball"></span> You're free</li>
+				<li class="flex items-center gap-2.5"><span class="h-3.5 w-5 bg-ball"></span> {t().avail.legendYou}</li>
 				<li class="flex items-center gap-2.5">
 					<span class="relative h-3.5 w-5 bg-white/15"><span class="absolute inset-0 grid place-items-center font-mono text-[9px] text-muted">3</span></span>
-					Friends free too (also shown on your cells)
+					{t().avail.legendFriends}
 				</li>
 				<li class="flex items-center gap-2.5">
 					<span class="h-3.5 w-5 border border-line bg-[repeating-linear-gradient(135deg,rgb(248_113_113/0.3)_0_2px,transparent_2px_6px)]"></span>
-					No doubles court open
+					{t().avail.legendNoCourt}
 				</li>
 			</ul>
 		</div>
 		<div class="card p-4">
-			<h2 class="eyebrow">This week</h2>
-			<p class="mt-0.5 text-xs text-muted">{filledIn.length} of {data.people.length} filled in</p>
+			<h2 class="eyebrow">{t().avail.thisWeek}</h2>
+			<p class="mt-0.5 text-xs text-muted">{t().avail.filledIn(filledIn.length, data.people.length)}</p>
 			<ul class="mt-3 space-y-2">
 				{#each filledIn as p (p.id)}
 					<li class="flex items-center gap-2 text-[13px]">
 						<Avatar id={p.id} name={p.name} size={20} me={p.id === data.user.id} />
-						{p.name}{#if p.id === data.user.id}<span class="text-faint">&nbsp;(you)</span>{/if}
+						{p.name}{#if p.id === data.user.id}<span class="text-faint">&nbsp;{t().common.youParen}</span>{/if}
 						<Check class="ml-auto size-3.5 text-free" />
 					</li>
 				{/each}
 				{#each missing as p (p.id)}
 					<li class="flex items-center gap-2 text-[13px] text-faint">
 						<span class="opacity-50"><Avatar id={p.id} name={p.name} size={20} /></span>
-						{p.name}{#if p.id === data.user.id}&nbsp;(you){/if}
-						<span class="ml-auto text-[11px]">not yet</span>
+						{p.name}{#if p.id === data.user.id}&nbsp;{t().common.youParen}{/if}
+						<span class="ml-auto text-[11px]">{t().avail.notYet}</span>
 					</li>
 				{/each}
 			</ul>
@@ -398,14 +392,14 @@
 	{#if undo || status !== 'idle'}
 		<div class="pointer-events-auto flex items-center gap-3 border border-line-strong bg-panel-2 py-1.5 pr-1.5 pl-3.5 font-mono text-xs shadow-2xl shadow-black" role="status">
 			{#if status === 'saving'}
-				<LoaderCircle class="size-3.5 animate-spin text-muted" /><span class="text-muted">Saving…</span>
+				<LoaderCircle class="size-3.5 animate-spin text-muted" /><span class="text-muted">{t().common.saving}</span>
 			{:else if status === 'error'}
-				<TriangleAlert class="size-3.5 text-danger" /><span class="text-danger">Couldn't save. Check your connection.</span>
+				<TriangleAlert class="size-3.5 text-danger" /><span class="text-danger">{t().avail.saveError}</span>
 			{:else}
-				<Check class="size-3.5 text-free" /><span class="text-muted">{undo ? undo.label : 'Saved'} · {total} h this week</span>
+				<Check class="size-3.5 text-free" /><span class="text-muted">{undo ? undo.label : t().avail.savedShort} · {t().avail.hours(total)}</span>
 			{/if}
 			{#if undo}
-				<button class="btn-primary h-7" onclick={doUndo}><Undo2 class="size-3.5" /> Undo</button>
+				<button class="btn-primary h-7" onclick={doUndo}><Undo2 class="size-3.5" /> {t().avail.undo}</button>
 			{:else}
 				<span class="w-1"></span>
 			{/if}

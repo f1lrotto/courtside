@@ -3,6 +3,7 @@ import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { building } from '$app/env';
 import { auth, migrateAuth, seedAdminInvite, toUser } from '#lib/server/auth.js';
+import { pickLang } from '#lib/i18n.js';
 import { startScheduler } from '#lib/server/scraper.js';
 
 export const init: ServerInit = async () => {
@@ -16,6 +17,7 @@ const PUBLIC = ['/login', '/signup'];
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
+	event.locals.lang = pickLang(event.cookies.get('lang'), event.request.headers.get('accept-language'));
 	// Better Auth's own endpoints (/api/auth/*) answer before the login gate
 	if (path.startsWith('/api/auth/')) return svelteKitHandler({ event, resolve, auth, building });
 
@@ -28,5 +30,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (path.startsWith('/admin') && event.locals.user?.role !== 'admin') {
 		redirect(303, '/');
 	}
-	return resolve(event);
+	const lang = event.locals.lang;
+	return resolve(event, { transformPageChunk: ({ html }) => html.replace('<html lang="en">', `<html lang="${lang}">`) });
 };

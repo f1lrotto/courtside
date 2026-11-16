@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import Logo from '#lib/components/Logo.svelte';
-	import { timeAgo } from '#lib/format.js';
+	import LangSwitch from '#lib/components/LangSwitch.svelte';
+	import { t, timeAgo } from '#lib/i18n.js';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
 	const links = $derived([
-		{ href: '/', label: 'Matches' },
-		{ href: '/availability', label: 'My availability' },
-		{ href: '/courts', label: 'Courts' },
-		...(data.user.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : [])
+		{ href: '/', label: t().nav.matches },
+		{ href: '/availability', label: t().nav.availability },
+		{ href: '/courts', label: t().nav.courts },
+		...(data.user.role === 'admin' ? [{ href: '/admin', label: t().nav.admin }] : [])
 	]);
 	const active = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
@@ -19,8 +20,8 @@
 <div class="min-h-dvh">
 	<header class="sticky top-0 z-30 border-b border-line bg-bg">
 		<div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 px-4 sm:h-14 sm:flex-nowrap sm:px-6">
-			<a href="/" class="flex h-14 shrink-0 items-center" aria-label="Courtside home"><Logo wordmark /></a>
-			<nav class="order-last -mx-4 -mb-px flex h-11 w-[calc(100%+2rem)] items-stretch overflow-x-auto border-t border-line sm:order-none sm:mx-0 sm:h-14 sm:w-auto sm:border-t-0 sm:border-l" aria-label="Main">
+			<a href="/" class="flex h-14 shrink-0 items-center" aria-label={t().nav.home}><Logo wordmark /></a>
+			<nav class="order-last -mx-4 -mb-px flex h-11 w-[calc(100%+2rem)] items-stretch overflow-x-auto border-t border-line sm:order-none sm:mx-0 sm:h-14 sm:w-auto sm:border-t-0 sm:border-l" aria-label={t().nav.main}>
 				{#each links as l (l.href)}
 					<a
 						href={l.href}
@@ -33,13 +34,14 @@
 				{/each}
 			</nav>
 			<div class="ml-auto flex items-center gap-3">
-				<span class="eyebrow hidden items-center gap-2 text-[10px] text-faint md:flex" title="Court data from the clubs' booking pages">
+				<LangSwitch />
+				<span class="eyebrow hidden items-center gap-2 text-[10px] text-faint md:flex" title={t().nav.syncSource}>
 					<span class="size-1.5 {data.lastUpdated ? 'bg-free' : 'bg-faint'} {data.refreshing ? 'animate-pulse' : ''}"></span>
-					{data.refreshing ? 'Syncing courts…' : data.lastUpdated ? `Courts synced ${timeAgo(data.lastUpdated)}` : 'Courts not synced yet'}
+					{data.refreshing ? t().nav.syncing : data.lastUpdated ? t().nav.synced(timeAgo(data.lastUpdated)) : t().nav.notSynced}
 				</span>
 				<form method="POST" action="/logout" class="flex items-center gap-2">
-					<a href="/account" aria-current={active('/account') ? 'page' : undefined} class="text-[13px] underline-offset-4 hover:text-fg hover:underline {active('/account') ? 'text-fg underline' : 'text-muted'}" title="Your account">{data.user.name}</a>
-					<button class="btn-ghost h-7 px-2">Sign out</button>
+					<a href="/account" aria-current={active('/account') ? 'page' : undefined} class="text-[13px] underline-offset-4 hover:text-fg hover:underline {active('/account') ? 'text-fg underline' : 'text-muted'}" title={t().nav.account}>{data.user.name}</a>
+					<button class="btn-ghost h-7 px-2">{t().nav.signOut}</button>
 				</form>
 			</div>
 		</div>

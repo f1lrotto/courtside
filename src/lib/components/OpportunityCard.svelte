@@ -4,8 +4,8 @@
 	import type { Opportunity } from '../match';
 	import { PLAYERS_NEEDED, bestStart, premium } from '../match';
 	import { slotLabel } from '../time';
-	import { bookingUrl, courtLabel, venueById } from '../venues';
-	import { euro } from '../format';
+	import { bookingUrl, venueById } from '../venues';
+	import { courtLabel, euro, t } from '../i18n';
 
 	let { o, meId, len }: { o: Opportunity; meId: number; len: number } = $props();
 
@@ -34,8 +34,8 @@
 			if (at.length === o.starts.length) continue;
 			const first = at[0];
 			const last = at[at.length - 1];
-			if (first > o.firstStart) notes.push(`${p.name} can start from ${slotLabel(first)}`);
-			else if (last < o.lastStart) notes.push(`${p.name} only until a ${slotLabel(last)} start`);
+			if (first > o.firstStart) notes.push(t().card.startsFrom(p.name, slotLabel(first)));
+			else if (last < o.lastStart) notes.push(t().card.onlyUntil(p.name, slotLabel(last)));
 		}
 		return notes.join(' · ');
 	});
@@ -55,9 +55,9 @@
 				</div>
 				<div class="eyebrow mt-0.5 text-[10px] text-muted">
 					{#if flexible}
-						can start {slotLabel(o.firstStart)}–{slotLabel(o.lastStart)}
+						{t().card.canStart(slotLabel(o.firstStart), slotLabel(o.lastStart))}
 					{:else}
-						{len} min game
+						{t().card.game(len)}
 					{/if}
 				</div>
 			</div>
@@ -69,9 +69,9 @@
 					{/each}
 				</div>
 				<div class="min-w-0 text-[13px] leading-snug">
-					<span class="text-fg">{shown.map((p) => (p.id === meId ? 'You' : p.name)).join(', ')}</span>
+					<span class="text-fg">{shown.map((p) => (p.id === meId ? t().common.you : p.name)).join(', ')}</span>
 					<span class="eyebrow block text-[10px] text-faint">
-						{start.players.length} free{#if start.players.length > needed}&nbsp;· pick {needed}{/if}{#if !includesMe}&nbsp;· without you{/if}
+						{t().card.free(start.players.length)}{#if start.players.length > needed}&nbsp;· {t().card.pick(needed)}{/if}{#if !includesMe}&nbsp;· {t().card.withoutYou}{/if}
 					</span>
 				</div>
 			</div>
@@ -85,14 +85,14 @@
 					{venueById(cheapest.venue).short} · {courtLabel(cheapest.name)}
 				</span>
 				<span class="text-muted">
-					{#if cheapest.price !== null}{euro(cheapest.price)} · {each(cheapest.price)} each{/if}{#if start.courts.length > 1}<span class="text-faint">&nbsp;· +{start.courts.length - 1} more</span>{/if}
+					{#if cheapest.price !== null}{euro(cheapest.price)} · {t().common.each(each(cheapest.price))}{/if}{#if start.courts.length > 1}<span class="text-faint">&nbsp;· {t().card.more(start.courts.length - 1)}</span>{/if}
 				</span>
 				{#if extra > 0}
 					<span
 						class="eyebrow mt-1 block text-[10px] text-orange-400"
-						title="Cheaper courts are booked at this time. The cheapest court costs {euro(start.floor!)}."
+						title={t().card.premiumTitle(euro(start.floor!))}
 					>
-						+{euro(extra)} · cheaper courts booked
+						{t().common.premium(euro(extra))}
 					</span>
 				{/if}
 			</div>
@@ -101,14 +101,14 @@
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn-primary"
-				aria-label="Book {venueById(cheapest.venue).short} {courtLabel(cheapest.name)} at {slotLabel(start.slot)}"
+				aria-label={t().common.bookAria(`${venueById(cheapest.venue).short} ${courtLabel(cheapest.name)}`, slotLabel(start.slot))}
 			>
-				Book <ExternalLink class="size-3" />
+				{t().common.book} <ExternalLink class="size-3" />
 			</a>
 			<button
 				type="button"
 				class="btn-quiet w-8 px-0 sm:hidden"
-				aria-label={open ? 'Hide details' : 'Show details'}
+				aria-label={open ? t().card.hideDetails : t().card.showDetails}
 				aria-expanded={open}
 				onclick={() => (open = !open)}
 			>
@@ -120,8 +120,8 @@
 	{#if open}
 		<div class="border-t border-dashed border-line-strong bg-bg px-4 py-4">
 			{#if flexible}
-				<div class="mb-1 flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Start time">
-					<span class="eyebrow mr-1 text-muted">Start at</span>
+				<div class="mb-1 flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label={t().card.startTime}>
+					<span class="eyebrow mr-1 text-muted">{t().card.startAt}</span>
 					{#each o.starts as s, i (s.slot)}
 						<button
 							type="button"
@@ -131,9 +131,9 @@
 								{i === pick ? 'border-fg bg-fg text-black' : 'border-line-strong text-muted hover:border-muted hover:text-fg'}"
 							onclick={() => (picked = i)}
 						>
-							{slotLabel(s.slot)}<span class="ml-1 {i === pick ? 'text-black/55' : 'text-faint'}">{s.players.length}p</span>{#if premium(s) > 0}<span
+							{slotLabel(s.slot)}<span class="ml-1 {i === pick ? 'text-black/55' : 'text-faint'}">{t().card.players(s.players.length)}</span>{#if premium(s) > 0}<span
 										class="ml-1 {i === pick ? 'text-orange-700' : 'text-orange-400'}"
-										title="Only pricier courts are free at this start">+{euro(premium(s))}</span
+										title={t().card.onlyPricier}>+{euro(premium(s))}</span
 									>{/if}
 						</button>
 					{/each}
@@ -141,7 +141,7 @@
 				{#if changes}<p class="mb-1 text-xs text-faint">{changes}</p>{/if}
 			{/if}
 			<div class="eyebrow mt-3 text-muted">
-				{start.courts.length} court{start.courts.length === 1 ? '' : 's'} free {slotLabel(start.slot)}–{slotLabel(start.slot + slots)}, cheapest first
+				{t().card.courtsFree(start.courts.length, slotLabel(start.slot), slotLabel(start.slot + slots))}
 			</div>
 			<ul class="mt-2 grid border-t border-l border-line sm:grid-cols-2 lg:grid-cols-3">
 				{#each start.courts as c (c.venue + c.courtId)}
@@ -157,17 +157,17 @@
 								<span class="block truncate text-[13px]">{venueById(c.venue).short} · {courtLabel(c.name)}</span>
 								{#if c.price !== null}
 									<span class="block text-xs text-muted"
-										>{euro(c.price)} <span class="text-faint">· {each(c.price)} each</span
+										>{euro(c.price)} <span class="text-faint">· {t().common.each(each(c.price))}</span
 										>{#if over(c.price) > 0}<span class="text-orange-400">&nbsp;· +{euro(over(c.price))}</span>{/if}</span
 									>
 								{/if}
 							</span>
-							<span class="eyebrow flex items-center gap-1 text-muted group-hover:text-fg">Book <ExternalLink class="size-3" /></span>
+							<span class="eyebrow flex items-center gap-1 text-muted group-hover:text-fg">{t().common.book} <ExternalLink class="size-3" /></span>
 						</a>
 					</li>
 				{/each}
 			</ul>
-			<p class="mt-3 text-xs text-faint">Booking opens the club's page for that day; pick {slotLabel(start.slot)} on the court above.</p>
+			<p class="mt-3 text-xs text-faint">{t().card.bookingHint(slotLabel(start.slot))}</p>
 		</div>
 	{/if}
 </div>

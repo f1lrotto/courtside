@@ -4,6 +4,7 @@ import { db } from '#lib/server/db.js';
 import { auth, isEmail, normalizeEmail } from '#lib/server/auth.js';
 import { pageStatus } from '#lib/server/data.js';
 import { isRefreshing, refreshAll } from '#lib/server/scraper.js';
+import { dict } from '#lib/i18n.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = () => {
@@ -24,9 +25,9 @@ export const actions: Actions = {
 	invite: async ({ request, locals }) => {
 		const form = await request.formData();
 		const email = normalizeEmail(form.get('email'));
-		if (!isEmail(email)) return fail(400, { invite: { email, error: 'Enter a valid email address.' } });
+		if (!isEmail(email)) return fail(400, { invite: { email, error: dict(locals.lang).signup.badEmail } });
 		if (db.prepare('SELECT 1 FROM "user" WHERE email = ?').get(email)) {
-			return fail(400, { invite: { email, error: `${email} already has an account.` } });
+			return fail(400, { invite: { email, error: dict(locals.lang).admin.hasAccount(email) } });
 		}
 		db.prepare(
 			'INSERT INTO invites (email, role, invited_by) VALUES (?, ?, ?) ON CONFLICT (email) DO UPDATE SET role = excluded.role'
@@ -42,20 +43,20 @@ export const actions: Actions = {
 	setRole: async ({ request, locals }) => {
 		const form = await request.formData();
 		const id = Number(form.get('id'));
-		if (id === locals.user!.id) error(400, "You can't change your own role.");
+		if (id === locals.user!.id) error(400, dict(locals.lang).admin.ownRole);
 		await auth.api.setRole({ body: { userId: String(id), role: role(form.get('role')) }, headers: request.headers });
 	},
 
 	remove: async ({ request, locals }) => {
 		const id = Number((await request.formData()).get('id'));
-		if (id === locals.user!.id) error(400, "You can't remove yourself.");
+		if (id === locals.user!.id) error(400, dict(locals.lang).admin.removeYourself);
 		// also deletes their sessions, accounts and (by foreign key) availability
 		await auth.api.removeUser({ body: { userId: String(id) }, headers: request.headers });
 	},
 
 	resetPassword: async ({ request, locals }) => {
 		const id = Number((await request.formData()).get('id'));
-		if (id === locals.user!.id) error(400, 'Change your own password on your account page.');
+		if (id === locals.user!.id) error(400, dict(locals.lang).admin.ownPassword);
 		// no email sending: the admin hands this temporary password over themselves
 		const temporary = randomBytes(9).toString('base64url');
 		await auth.api.setUserPassword({ body: { userId: String(id), newPassword: temporary }, headers: request.headers });

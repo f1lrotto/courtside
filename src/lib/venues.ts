@@ -30,9 +30,3 @@ export const bookingUrl = (venue: string, date: string) =>
 /** Oura's narrow court for two players is named "Single"; every other court is a full doubles court. */
 export const courtKind = (name: string): CourtKind =>
 	/^single$/i.test(name.trim()) ? 'singles' : 'doubles';
-
-/** "7 - kurt Think Big Collective" -> "Court 7", "kurt 2" -> "Court 2", "Single" -> "Single" */
-export function courtLabel(name: string): string {
-	const n = name.match(/(\d+)/);
-	return courtKind(name) === 'singles' ? 'Single' : n ? `Court ${n[1]}` : name;
-}
