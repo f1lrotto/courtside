@@ -2,12 +2,14 @@
 	import { enhance } from '$app/forms';
 	import { Palmtree } from '@lucide/svelte';
 	import { MAX_GAMES } from '#lib/format.js';
+	import { MATCH_SIZES } from '#lib/match.js';
 	import LangSwitch from '#lib/components/LangSwitch.svelte';
 	import { t } from '#lib/i18n.js';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 	let games = $derived(data.user.gamesPerWeek);
+	let matchSize = $derived(data.user.matchSize);
 </script>
 
 <svelte:head><title>{t().account.title} · Courtside</title></svelte:head>
@@ -40,6 +42,21 @@
 					{/each}
 				</div>
 				<p class="mt-2 text-xs text-faint">{t().common.gamesHint}</p>
+			</fieldset>
+			<fieldset id="match-size">
+				<legend class="label">{t().common.matchSize}</legend>
+				<div class="flex w-fit flex-wrap border border-line-strong" role="radiogroup">
+					{#each MATCH_SIZES as size (size)}
+						<label
+							class="flex h-9 cursor-pointer items-center justify-center border-r border-line-strong px-3 text-sm transition-colors last:border-r-0 has-focus-visible:outline has-focus-visible:outline-fg
+								{matchSize === size ? 'bg-fg text-black' : 'text-muted hover:bg-hover hover:text-fg'}"
+						>
+							<input class="sr-only" type="radio" name="matchSize" value={size} checked={matchSize === size} onchange={() => (matchSize = size)} />
+							{t().common.matchSizes[size]}
+						</label>
+					{/each}
+				</div>
+				<p class="mt-2 text-xs text-faint">{t().common.matchSizeHint}</p>
 			</fieldset>
 			{#if form?.profile && 'error' in form.profile}
 				<p class="text-sm text-danger" role="alert">{form.profile.error}</p>

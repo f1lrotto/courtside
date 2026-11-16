@@ -59,6 +59,9 @@ const en = {
 		courtsOpen: (n: number) => `${n} doubles ${en_pl(n, 'court', 'courts')} open`,
 		gamesPerWeek: 'Games per week',
 		gamesHint: 'E.g. free on four days but want to play twice: pick 2.',
+		matchSize: 'Match size',
+		matchSizes: { both: 'Singles & doubles', doubles: 'Doubles only', singles: 'Singles only' },
+		matchSizeHint: "You're only counted and planned for the games you pick.",
 		editAvailability: 'Edit my availability'
 	},
 	ago: {
@@ -206,6 +209,8 @@ const en = {
 		legendYou: "You're free",
 		legendFriends: 'Friends free too (also shown on your cells)',
 		legendNoCourt: 'No doubles court open',
+		youPlay: 'You play',
+		matchSizeChange: 'Change on Account',
 		thisWeek: 'This week',
 		filledIn: (a: number, b: number) => `${a} of ${b} filled in`,
 		notYet: 'not yet',
@@ -313,7 +318,7 @@ const en = {
 		stepOf: (i: number, n: number) => `Step ${i} of ${n}`,
 		basicsTitle: 'First, the basics',
 		basicsBody: 'Pick a language and check your name. Friends see it on every match.',
-		gamesTitle: 'How often do you want to play?',
+		gamesTitle: 'How often and what do you want to play?',
 		gamesBody: 'The weekly plan never gives you more games than this, even when you mark more free time.',
 		perWeek: (n: number) => `${n}× a week`,
 		gamesFor: (n: number) =>
@@ -376,6 +381,9 @@ const sk: Dict = {
 		courtsOpen: (n: number) => `${n} ${sk_pl(n, 'voľný kurt', 'voľné kurty', 'voľných kurtov')} na štvorhru`,
 		gamesPerWeek: 'Hier za týždeň',
 		gamesHint: 'Napr. máš voľno štyri dni, ale chceš hrať dvakrát: vyber 2.',
+		matchSize: 'Typ hry',
+		matchSizes: { both: 'Dvojhra aj štvorhra', doubles: 'Len štvorhra', singles: 'Len dvojhra' },
+		matchSizeHint: 'Počítame s tebou a plánujeme ťa len do hier, ktoré vyberieš.',
 		editAvailability: 'Upraviť moju dostupnosť'
 	},
 	ago: {
@@ -524,6 +532,8 @@ const sk: Dict = {
 		legendYou: 'Máš voľno',
 		legendFriends: 'Voľno majú aj kamaráti (aj na tvojich políčkach)',
 		legendNoCourt: 'Žiadny voľný kurt na štvorhru',
+		youPlay: 'Hráš',
+		matchSizeChange: 'Zmeniť v účte',
 		thisWeek: 'Tento týždeň',
 		filledIn: (a: number, b: number) => `Vyplnené: ${a} z ${b}`,
 		notYet: 'ešte nie',
@@ -631,7 +641,7 @@ const sk: Dict = {
 		stepOf: (i: number, n: number) => `Krok ${i} z ${n}`,
 		basicsTitle: 'Najprv základy',
 		basicsBody: 'Vyber si jazyk a skontroluj meno. Kamaráti ho uvidia pri každom zápase.',
-		gamesTitle: 'Ako často chceš hrať?',
+		gamesTitle: 'Ako často a čo chceš hrať?',
 		gamesBody: 'Týždenný plán ti nikdy nedá viac hier, ani keď označíš viac voľného času.',
 		perWeek: (n: number) => `${n}× týždenne`,
 		gamesFor: (n: number) =>

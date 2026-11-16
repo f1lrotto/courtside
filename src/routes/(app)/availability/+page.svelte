@@ -396,6 +396,13 @@
 	</div>
 
 	<aside class="space-y-4 text-sm">
+		<div class="card flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 p-4" data-my-match-size>
+			<div>
+				<h2 class="eyebrow">{t().avail.youPlay}</h2>
+				<p class="mt-1 text-[13px]">{t().common.matchSizes[data.user.matchSize]}</p>
+			</div>
+			<a href="/account#match-size" class="eyebrow text-[10px] text-muted hover:text-fg">{t().avail.matchSizeChange} →</a>
+		</div>
 		<div class="card p-4">
 			<h2 class="eyebrow">{t().avail.legend}</h2>
 			<ul class="mt-3 space-y-2.5 text-xs text-muted">
@@ -418,6 +425,9 @@
 					<li class="flex items-center gap-2 text-[13px] {p.status === 'missing' ? 'text-faint' : ''}" data-status={p.status}>
 						<span class={p.status === 'missing' ? 'opacity-50' : ''}><Avatar id={p.id} name={p.name} size={20} me={p.me && p.status !== 'missing'} /></span>
 						{p.name}{#if p.me}<span class="text-faint">&nbsp;{t().common.youParen}</span>{/if}
+						{#if p.matchSize && p.matchSize !== 'both'}
+							<span class="border border-line px-1 text-[10px] whitespace-nowrap text-muted" data-match-size={p.matchSize}>{t().common.matchSizes[p.matchSize]}</span>
+						{/if}
 						{#if p.status === 'marked'}
 							<Check class="ml-auto size-3.5 text-free" />
 						{:else if p.status === 'off'}

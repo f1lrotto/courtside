@@ -8,7 +8,14 @@ export interface Person {
 	gamesPerWeek?: number;
 	/** on a break: not playing any week they haven't marked times in */
 	away?: boolean;
+	/** which games this person plays; nobody is counted or planned for the other kind (default both) */
+	matchSize?: MatchSize;
 }
+
+export type MatchSize = 'both' | CourtKind;
+export const MATCH_SIZES: MatchSize[] = ['both', 'doubles', 'singles'];
+export const toMatchSize = (v: unknown): MatchSize => MATCH_SIZES.find((s) => s === v) ?? 'both';
+export const plays = (p: Person, kind: CourtKind) => (p.matchSize ?? 'both') === 'both' || p.matchSize === kind;
 
 export interface Court {
 	venue: string;
@@ -74,7 +81,7 @@ const byName = (a: Person, b: Person) => a.name.localeCompare(b.name) || a.id - 
  * court of the right kind is free for the whole game. Consecutive starts are merged into one
  * window even when the group changes along the way (each start keeps its own players), so one
  * free evening reads as one option. With `exact`, a start qualifies only with exactly `needed`
- * players free (used for "one short").
+ * players free (used for "one short"). Only people who play this kind of game count.
  */
 export function findOpportunities(
 	input: MatchInput,
@@ -84,11 +91,12 @@ export function findOpportunities(
 ): Opportunity[] {
 	const { duration } = input;
 	const courts = input.courts.filter((c) => c.kind === kind);
+	const playing = input.people.filter((p) => plays(p, kind));
 	const out: Opportunity[] = [];
 
 	for (const date of input.dates) {
 		const free = input.availability[date] ?? {};
-		const sets = input.people.map((p) => ({ p, slots: new Set(free[p.id] ?? []) }));
+		const sets = playing.map((p) => ({ p, slots: new Set(free[p.id] ?? []) }));
 		const blocks = input.freeBlocks[date] ?? {};
 		const allSlots = sets.flatMap((s) => [...s.slots]);
 		if (allSlots.length === 0) continue;

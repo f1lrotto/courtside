@@ -6,6 +6,7 @@ import { db, tx } from '#lib/server/db.js';
 import { setAway } from '#lib/server/data.js';
 import { SLOT_MINUTES, minutesNowLocal, todayLocal } from '#lib/time.js';
 import { dict } from '#lib/i18n.js';
+import { toMatchSize } from '#lib/match.js';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -14,13 +15,15 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const games = Number(form.get('gamesPerWeek'));
+		const matchSize = toMatchSize(form.get('matchSize'));
 		if (!name || name.length > 40) return fail(400, { profile: { error: m.signup.badName } });
 		if (!Number.isInteger(games) || games < 1 || games > MAX_GAMES) {
 			return fail(400, { profile: { error: m.account.gamesRange(MAX_GAMES) } });
 		}
-		db.prepare(`UPDATE "user" SET name = ?, "gamesPerWeek" = ?, "updatedAt" = ? WHERE id = ?`).run(
+		db.prepare(`UPDATE "user" SET name = ?, "gamesPerWeek" = ?, "matchSize" = ?, "updatedAt" = ? WHERE id = ?`).run(
 			name,
 			games,
+			matchSize,
 			new Date().toISOString(),
 			locals.user!.id
 		);

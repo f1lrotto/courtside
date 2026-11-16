@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { MAX_GAMES } from '#lib/format.js';
 import { dict } from '#lib/i18n.js';
+import { toMatchSize } from '#lib/match.js';
 import { availability, courts, freeBlocks, people, prices, setAvailability, setAway } from '#lib/server/data.js';
 import { db, tx } from '#lib/server/db.js';
 import { HORIZON_DAYS } from '#lib/server/scraper.js';
@@ -56,6 +57,7 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const games = Number(form.get('gamesPerWeek'));
+		const matchSize = toMatchSize(form.get('matchSize'));
 		const away = form.get('away') === 'on';
 		// on a break, no usual times get added
 		const picked = away ? [] : form.getAll('block').map(String);
@@ -85,9 +87,10 @@ export const actions: Actions = {
 			days[date] = [...new Set([...(existing[date]?.[me] ?? []), ...add])].sort((a, b) => a - b);
 		}
 		tx(() => {
-			db.prepare(`UPDATE "user" SET name = ?, "gamesPerWeek" = ?, "updatedAt" = ? WHERE id = ?`).run(
+			db.prepare(`UPDATE "user" SET name = ?, "gamesPerWeek" = ?, "matchSize" = ?, "updatedAt" = ? WHERE id = ?`).run(
 				name,
 				games,
+				matchSize,
 				new Date().toISOString(),
 				me
 			);

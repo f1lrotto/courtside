@@ -3,7 +3,7 @@
 	import { ArrowLeft, ArrowRight, Check, Palmtree } from '@lucide/svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import LangSwitch from '#lib/components/LangSwitch.svelte';
-	import { findOpportunities } from '#lib/match.js';
+	import { MATCH_SIZES, findOpportunities, plays } from '#lib/match.js';
 	import { MAX_GAMES } from '#lib/format.js';
 	import { fmtWeekday, t } from '#lib/i18n.js';
 	import { DAY_PARTS, SLOT_MINUTES, addDays, partSlots, weekday, weekStart, type DayPart } from '#lib/time.js';
@@ -18,6 +18,8 @@
 	let games = $state(untrack(() => data.user.gamesPerWeek));
 	let picked = $state<string[]>(untrack(() => data.initial));
 	let away = $state(untrack(() => data.user.away));
+	let matchSize = $state(untrack(() => data.user.matchSize));
+	const kinds = $derived((['doubles', 'singles'] as const).filter((k) => plays({ ...data.user, matchSize }, k)));
 
 	const PARTS = Object.keys(DAY_PARTS) as DayPart[];
 	const days = $derived(Array.from({ length: 7 }, (_, i) => addDays(weekStart(data.today), i)));
@@ -51,6 +53,7 @@
 		);
 		const input = {
 			...data.match,
+			people: data.match.people.map((p) => (p.id === me ? { ...p, matchSize } : p)),
 			availability,
 			duration: 90 / SLOT_MINUTES,
 			notBefore: { date: data.today, slot: data.nowSlot }
@@ -98,6 +101,7 @@
 			<!-- the inputs that matter are always in the form, whichever step is showing -->
 			<input type="hidden" name="name" value={name} />
 			<input type="hidden" name="gamesPerWeek" value={games} />
+			<input type="hidden" name="matchSize" value={matchSize} />
 			{#each picked as k (k)}<input type="hidden" name="block" value={k} />{/each}
 			{#if away}<input type="hidden" name="away" value="on" />{/if}
 
@@ -136,6 +140,24 @@
 				</div>
 				<p class="mt-3 font-mono text-sm text-fg" aria-live="polite">{t().welcome.gamesFor(games)}</p>
 				<p class="mt-1 text-xs text-faint">{t().common.gamesHint}</p>
+
+				<h2 class="label mt-8">{t().common.matchSize}</h2>
+				<div class="grid grid-cols-3 border border-line-strong sm:w-fit" role="radiogroup" aria-label={t().common.matchSize}>
+					{#each MATCH_SIZES as size (size)}
+						<button
+							type="button"
+							role="radio"
+							aria-checked={matchSize === size}
+							data-match-size={size}
+							class="flex h-12 cursor-pointer items-center justify-center border-r border-line-strong px-4 text-sm transition-colors last:border-r-0
+								{matchSize === size ? 'bg-fg text-black' : 'text-muted hover:bg-hover hover:text-fg'}"
+							onclick={() => (matchSize = size)}
+						>
+							{t().common.matchSizes[size]}
+						</button>
+					{/each}
+				</div>
+				<p class="mt-2 text-xs text-faint">{t().common.matchSizeHint}</p>
 			{:else if step === 2}
 				<h1 class="title mt-2">{t().welcome.timesTitle}</h1>
 				<p class="mt-2 max-w-xl text-sm text-muted">{t().welcome.timesBody}</p>
@@ -197,10 +219,14 @@
 						{#if hours === 0}
 							<p class="mt-2 text-xs text-muted">{t().welcome.liveNone}</p>
 						{:else}
-							<p class="mt-3 font-mono text-3xl tabular-nums" data-live-doubles>{live.doubles}</p>
-							<p class="text-xs text-muted">{t().welcome.doublesNoun(live.doubles)}</p>
-							<p class="mt-3 font-mono text-3xl tabular-nums" data-live-singles>{live.singles}</p>
-							<p class="text-xs text-muted">{t().welcome.singlesNoun(live.singles)}</p>
+							{#if kinds.includes('doubles')}
+								<p class="mt-3 font-mono text-3xl tabular-nums" data-live-doubles>{live.doubles}</p>
+								<p class="text-xs text-muted">{t().welcome.doublesNoun(live.doubles)}</p>
+							{/if}
+							{#if kinds.includes('singles')}
+								<p class="mt-3 font-mono text-3xl tabular-nums" data-live-singles>{live.singles}</p>
+								<p class="text-xs text-muted">{t().welcome.singlesNoun(live.singles)}</p>
+							{/if}
 							<p class="mt-3 border-t border-line pt-3 font-mono text-[11px] text-faint tabular-nums">{t().welcome.hoursTwoWeeks(hours)}</p>
 						{/if}
 					</aside>
@@ -217,6 +243,10 @@
 						<dt class="eyebrow text-muted">{t().common.gamesPerWeek}</dt>
 						<dd class="font-mono text-sm tabular-nums">{t().welcome.perWeek(games)}</dd>
 					</div>
+					<div class="flex items-center justify-between gap-4 px-5 py-3.5">
+						<dt class="eyebrow text-muted">{t().common.matchSize}</dt>
+						<dd class="text-sm" data-review-match-size>{t().common.matchSizes[matchSize]}</dd>
+					</div>
 					<div class="px-5 py-3.5">
 						<dt class="eyebrow text-muted">{t().welcome.usualTimes}</dt>
 						<dd class="mt-2 text-sm">
@@ -231,7 +261,11 @@
 									{/each}
 								</ul>
 								<p class="mt-3 font-mono text-[11px] text-faint tabular-nums">
-									{t().welcome.hoursTwoWeeks(hours)} · {t().welcome.liveDoubles(live.doubles)} · {t().welcome.liveSingles(live.singles)}
+									{[
+										t().welcome.hoursTwoWeeks(hours),
+										...(kinds.includes('doubles') ? [t().welcome.liveDoubles(live.doubles)] : []),
+										...(kinds.includes('singles') ? [t().welcome.liveSingles(live.singles)] : [])
+									].join(' · ')}
 								</p>
 							{/if}
 						</dd>

@@ -6,7 +6,7 @@ import { weekStart } from '../time';
 
 export function people(): Person[] {
 	const rows = db
-		.prepare(`SELECT id, name, coalesce("gamesPerWeek", 2) AS gamesPerWeek, coalesce(away, 0) AS away FROM "user" ORDER BY name COLLATE NOCASE`)
+		.prepare(`SELECT id, name, coalesce("gamesPerWeek", 2) AS gamesPerWeek, coalesce(away, 0) AS away, coalesce("matchSize", 'both') AS matchSize FROM "user" ORDER BY name COLLATE NOCASE`)
 		.all() as unknown as (Omit<Person, 'away'> & { away: number })[];
 	return rows.map((r) => ({ ...r, away: r.away === 1 }));
 }

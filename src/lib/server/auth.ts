@@ -7,6 +7,7 @@ import { building, dev } from '$app/env';
 import { getRequestEvent } from '$app/server';
 import { db } from './db';
 import { dict } from '../i18n';
+import { toMatchSize, type MatchSize } from '../match';
 
 export type Role = 'admin' | 'user';
 
@@ -18,6 +19,8 @@ export interface User {
 	gamesPerWeek: number;
 	/** on a break: every week counts as not playing unless they mark times in it */
 	away: boolean;
+	/** which games they play: singles, doubles or both */
+	matchSize: MatchSize;
 }
 
 export const DEFAULT_GAMES_PER_WEEK = 2;
@@ -37,7 +40,9 @@ export const auth = betterAuth({
 			// how many games a week the person wants; set on /account, never from the sign-up body
 			gamesPerWeek: { type: 'number', required: false, defaultValue: DEFAULT_GAMES_PER_WEEK, input: false },
 			// on a break; set on /account or /welcome
-			away: { type: 'boolean', required: false, defaultValue: false, input: false }
+			away: { type: 'boolean', required: false, defaultValue: false, input: false },
+			// 'both' | 'doubles' | 'singles'; set on /account or /welcome
+			matchSize: { type: 'string', required: false, defaultValue: 'both', input: false }
 		}
 	},
 	// Integer user ids, so availability and invites keep plain INTEGER foreign keys.
@@ -78,6 +83,7 @@ export function toUser(u: {
 	role?: string | null;
 	gamesPerWeek?: number | null;
 	away?: boolean | null;
+	matchSize?: string | null;
 }): User {
 	return {
 		id: Number(u.id),
@@ -85,7 +91,8 @@ export function toUser(u: {
 		name: u.name,
 		role: u.role === 'admin' ? 'admin' : 'user',
 		gamesPerWeek: u.gamesPerWeek ?? DEFAULT_GAMES_PER_WEEK,
-		away: Boolean(u.away)
+		away: Boolean(u.away),
+		matchSize: toMatchSize(u.matchSize)
 	};
 }
 

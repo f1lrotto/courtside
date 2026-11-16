@@ -145,6 +145,27 @@ describe('findOpportunities', () => {
 		expect(res.map((o) => [o.firstStart, o.lastStart, o.starts[0].courts[0].price])).toEqual([[t('10:30'), t('11:00'), 15]]);
 	});
 
+	it('leaves people out of the kinds of game they do not play', () => {
+		const all = range('10:00', '12:00');
+		const sized = people.map((p) => ({
+			...p,
+			matchSize: p.name === 'Ana' ? ('singles' as const) : p.name === 'Ben' ? ('doubles' as const) : undefined
+		}));
+		const res = (kind: 'doubles' | 'singles') =>
+			findOpportunities(
+				input({
+					duration: 2,
+					people: sized,
+					availability: { [D]: { 1: all, 2: all, 3: all, 4: all, 5: all } },
+					freeBlocks: { [D]: { 'aurial:1': freeOver('10:00', '12:00'), 'oura:3': freeOver('10:00', '12:00') } }
+				}),
+				kind
+			).flatMap((o) => o.starts.map((s) => s.players.map((p) => p.name).join()));
+		// singles-only Ana is never in a doubles game, doubles-only Ben never in a singles game
+		expect(res('doubles')).toEqual(Array(3).fill('Ben,Cyril,Dana,Eva'));
+		expect(res('singles')).toEqual(Array(3).fill('Ana,Cyril,Dana,Eva'));
+	});
+
 	it('skips starts that are already in the past', () => {
 		const all = range('08:00', '12:00');
 		const res = findOpportunities(
