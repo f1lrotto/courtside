@@ -65,6 +65,16 @@ ADMIN_EMAIL=you@example.com ORIGIN=https://courtside.example.com \
 | `ORIGIN` | none | Public URL, required behind a proxy for form CSRF checks (adapter-node) |
 | `SCRAPER` | on | Set to `off` to disable court syncing |
 
+## Deploy
+
+Production runs on [Railway](https://railway.com) from this repo's `Dockerfile` (Node 26 slim with curl), at https://padel.filiphupka.com:
+
+- one replica in `europe-west4`, capped at 0.5 vCPU and 0.5 GB RAM (it idles around 0.11 GB); app sleeping is off because the court sync runs in-process every 15 minutes
+- a 500 MB volume at `/data` holds the SQLite file (`DATABASE_PATH=/data/padel.db`)
+- variables: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `ORIGIN` (both the public URL), `ADMIN_EMAIL`, `PORT=3000`
+- DNS on Cloudflare: `padel` CNAME to the Railway domain, DNS only, plus Railway's `_railway-verify.padel` TXT record
+- every push to `main` redeploys; `/login` is the healthcheck
+
 ## Tests
 
 ```sh
