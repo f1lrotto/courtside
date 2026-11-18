@@ -1,8 +1,8 @@
-import { findOpportunities, planWeeks } from '#lib/match.js';
+import { courtKey, findOpportunities, planWeeks } from '#lib/match.js';
 import { GAME_LENGTHS } from '#lib/format.js';
-import { availability, courts, freeBlocks, people, prices } from '#lib/server/data.js';
+import { availability, blocks, courts, freeBlocks, people, prices } from '#lib/server/data.js';
 import { HORIZON_DAYS } from '#lib/server/scraper.js';
-import { SLOT_MINUTES, addDays, minutesNowLocal, todayLocal } from '#lib/time.js';
+import { SLOT_MINUTES, addDays, isDate, minutesNowLocal, todayLocal, weekDates, weekStart } from '#lib/time.js';
 import type { PageServerLoad } from './$types';
 
 
@@ -40,6 +40,23 @@ export const load: PageServerLoad = ({ url, locals }) => {
 
 	const plan = planWeeks([...doubles, ...singles], input.duration);
 
+	// who-is-free table for the asked week: who marked each slot, and how many doubles courts are free
+	const asked = url.searchParams.get('week');
+	const monday = weekStart(isDate(asked) ? asked : today);
+	const weekDays = weekDates(monday);
+	const weekBlocks = blocks(weekDays);
+	const courtsFree: Record<string, Record<number, number>> = {};
+	for (const date of weekDays) {
+		if (!weekBlocks[date]) continue;
+		const byDate: Record<number, number> = (courtsFree[date] = {});
+		for (const c of input.courts.filter((c) => c.kind === 'doubles')) {
+			for (const [slot, b] of Object.entries(weekBlocks[date][courtKey(c)] ?? {})) {
+				byDate[Number(slot)] = (byDate[Number(slot)] ?? 0) + (b.free ? 1 : 0);
+			}
+		}
+	}
+	const overlap = { monday, dates: weekDays, today, free: availability(weekDays), courtsFree };
+
 	return {
 		len,
 		plan,
@@ -51,6 +68,7 @@ export const load: PageServerLoad = ({ url, locals }) => {
 		markedCount,
 		people: input.people,
 		peopleCount: input.people.length,
-		hasCourtData: input.courts.length > 0
+		hasCourtData: input.courts.length > 0,
+		overlap
 	};
 };

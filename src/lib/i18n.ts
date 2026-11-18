@@ -272,6 +272,14 @@ const en = {
 		newShort: (min: number) => `Use a new password of at least ${min} characters.`,
 		wrongCurrent: 'Your current password is wrong.'
 	},
+	overlap: {
+		title: 'Who is free when',
+		hint: 'How many people are free at each time. Highlighted: 3 or more free together for at least an hour.',
+		legendTogether: '3+ for 1 h+',
+		pick: 'Click a time to see who is free.',
+		nobody: 'Nobody is free then.',
+		free: (n: number) => `${n} free`
+	},
 	admin: {
 		title: 'Admin',
 		sub: 'Invite friends, manage members and check the court sync.',
@@ -578,6 +586,14 @@ const sk: Dict = {
 		gamesRange: (max: number) => `Vyber 1 až ${max} hier za týždeň.`,
 		newShort: (min: number) => `Nové heslo musí mať aspoň ${min} znakov.`,
 		wrongCurrent: 'Súčasné heslo nie je správne.'
+	},
+	overlap: {
+		title: 'Kto má kedy voľno',
+		hint: 'Koľko ľudí má v danom čase voľno. Zvýraznené: aspoň 3 naraz aspoň na hodinu.',
+		legendTogether: '3+ na 1 h+',
+		pick: 'Klikni na čas a uvidíš, kto má voľno.',
+		nobody: 'Vtedy nemá voľno nikto.',
+		free: (n: number) => `voľno: ${n}`
 	},
 	admin: {
 		title: 'Admin',

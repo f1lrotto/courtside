@@ -9,6 +9,7 @@
 	import { bookingUrl, venueById } from '#lib/venues.js';
 	import { courtLabel, euro, fmtDay, t } from '#lib/i18n.js';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import WhoIsFree from '#lib/components/WhoIsFree.svelte';
 	import { ExternalLink } from '@lucide/svelte';
 	import type { PageProps } from './$types';
 
@@ -17,7 +18,8 @@
 	type View = 'plan' | 'doubles' | 'singles' | 'oneShort';
 	const VIEWS: View[] = ['plan', 'doubles', 'singles', 'oneShort'];
 	const view = $derived<View>(VIEWS.find((v) => v === page.url.searchParams.get('view')) ?? 'plan');
-	const href = (v: View, len = data.len) => `?len=${len}${v === 'plan' ? '' : `&view=${v}`}`;
+	const week = $derived(page.url.searchParams.get('week'));
+	const href = (v: View, len = data.len) => `?len=${len}${v === 'plan' ? '' : `&view=${v}`}${week ? `&week=${week}` : ''}`;
 	const select = (v: View) => goto(href(v), { replace: true, reset: false });
 	function tabKey(e: KeyboardEvent) {
 		const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
@@ -118,6 +120,8 @@
 		<span class="eyebrow text-fg">{t().matches.markCta}</span>
 	</a>
 {/if}
+
+<WhoIsFree week={data.overlap} people={data.people} meId={data.user.id} />
 
 <div class="mt-8 flex flex-wrap items-stretch border-b border-line" role="tablist" aria-label={t().matches.tabsLabel} tabindex="-1" onkeydown={tabKey}>
 	{#each tabs as t (t.id)}
