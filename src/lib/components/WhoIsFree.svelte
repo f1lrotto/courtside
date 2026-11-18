@@ -1,20 +1,23 @@
 <script lang="ts">
-	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import { Ban, Check, ChevronLeft, ChevronRight, Palmtree } from '@lucide/svelte';
 	import { page } from '$app/state';
 	import Avatar from './Avatar.svelte';
 	import { fmtDay, fmtDayMonth, fmtWeekday, t } from '../i18n';
+	import { VENUES, type VenueId } from '../venues';
 	import { DAY_SLOTS, FIRST_SLOT, LAST_SLOT, SLOT_MINUTES, addDays, slotLabel, weekStart } from '../time';
 
 	interface Props {
-		/** free: date -> userId -> slots; courtsFree: date -> slot -> doubles courts free (synced days only) */
+		/** free: date -> userId -> slots; courtsFree: date -> slot -> doubles courts free per club (synced days only) */
 		week: {
 			monday: string;
 			dates: string[];
 			today: string;
 			free: Record<string, Record<number, number[]>>;
-			courtsFree: Record<string, Record<number, number>>;
+			courtsFree: Record<string, Record<number, Record<VenueId, number>>>;
+			/** ids who said they're not playing this week */
+			notPlaying: number[];
 		};
-		people: { id: number; name: string }[];
+		people: { id: number; name: string; away?: boolean }[];
 		meId: number;
 	}
 	let { week, people, meId }: Props = $props();
@@ -54,6 +57,16 @@
 		)
 	);
 
+	// this week's status, as on My availability: marking times wins, then a break, then "not playing"
+	const status = $derived.by(() => {
+		const marked = new Set(week.dates.flatMap((d) => Object.keys(week.free[d] ?? {}).map(Number)));
+		const of = (p: { id: number; away?: boolean }) =>
+			marked.has(p.id) ? 'marked' : p.away ? 'away' : week.notPlaying.includes(p.id) ? 'off' : 'missing';
+		const groups = { marked: [] as string[], off: [] as string[], away: [] as string[], missing: [] as string[] };
+		for (const p of people) groups[of(p)].push(p.id === meId ? t().common.you : p.name);
+		return groups;
+	});
+
 	let pick = $state<{ date: string; slot: number } | null>(null);
 	const picked = $derived.by(() => {
 		if (!pick || !week.dates.includes(pick.date)) return null;
@@ -72,6 +85,13 @@
 			.sort((x, y) => y.to - y.from - (x.to - x.from) || x.from - y.from);
 		return { date, slot, people: list, courts: week.courtsFree[date]?.[slot] };
 	});
+	const total = (c: Record<VenueId, number>) => c.aurial + c.oura;
+	// a bar under each cell in the club's colour: blue Aurial, orange Oura, split when both have a court
+	const VENUE_BG: Record<VenueId, string> = { aurial: 'bg-sky-400', oura: 'bg-amber-300' };
+	const openAt = (d: string, s: number) => {
+		const c = week.courtsFree[d]?.[s];
+		return c ? VENUES.filter((v) => c[v.id] > 0).map((v) => v.id) : [];
+	};
 
 	const cellBg = (n: number, hit: boolean) =>
 		hit
@@ -120,7 +140,10 @@
 					{#each DAY_SLOTS as s (s)}
 						{@const n = freeAt[d][s]?.size ?? 0}
 						{@const hit = together[d].has(s)}
-						{@const noCourt = week.courtsFree[d]?.[s] === 0}
+						{@const c = week.courtsFree[d]?.[s]}
+						<!-- courts only matter when someone is free, so empty cells stay plain -->
+						{@const noCourt = n > 0 && !!c && total(c) === 0}
+						{@const open = n > 0 ? openAt(d, s) : []}
 						{@const on = pick?.date === d && pick.slot === s}
 						<button
 							type="button"
@@ -128,12 +151,17 @@
 								{hit ? 'text-black' : 'text-muted'} {on ? 'z-10 outline outline-1 -outline-offset-1 outline-fg' : ''}"
 							style="background:{cellBg(n, hit)}"
 							aria-pressed={on}
-							aria-label="{fmtDay(d)} {slotLabel(s)}: {t().overlap.free(n)}{noCourt ? t().avail.cellNoCourt : ''}"
+							aria-label="{fmtDay(d)} {slotLabel(s)}: {t().overlap.free(n)}{c ? `, ${VENUES.map((v) => `${v.short} ${c[v.id]}`).join(', ')}` : ''}"
 							data-hit={hit || undefined}
 							data-no-court={noCourt || undefined}
 							onclick={() => (pick = { date: d, slot: s })}
 						>
 							{#if noCourt}<span class="pointer-events-none absolute inset-0 {hit ? HATCH_ON_LIME : HATCH}"></span>{/if}
+							{#if open.length}
+								<span class="pointer-events-none absolute inset-x-0 bottom-0 flex h-[3px]" data-open={open.join(' ')}>
+									{#each open as v (v)}<span class="flex-1 {VENUE_BG[v]}"></span>{/each}
+								</span>
+							{/if}
 							<span class="relative">{n || ''}</span>
 						</button>
 					{/each}
@@ -142,15 +170,41 @@
 		</div>
 		<div class="eyebrow mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-faint">
 			<span class="flex items-center gap-1.5"><span class="h-2.5 w-4" style="background:{cellBg(3, true)}"></span>{t().overlap.legendTogether}</span>
+			{#each VENUES as v (v.id)}
+				<span class="flex items-center gap-1.5"><span class="h-[3px] w-4 {VENUE_BG[v.id]}"></span>{v.short}</span>
+			{/each}
 			<span class="flex items-center gap-1.5"><span class="h-2.5 w-4 border border-line {HATCH}"></span>{t().avail.legendNoCourt}</span>
 		</div>
 	</div>
+	<p class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-xs text-muted sm:px-5" data-week-status>
+		<span class="text-faint">{t().avail.filledIn(people.length - status.missing.length, people.length)}</span>
+		{#if status.marked.length}
+			<span class="flex items-center gap-1" data-status="marked"><Check class="size-3 shrink-0 text-free" />{status.marked.join(', ')}</span>
+		{/if}
+		{#if status.off.length}
+			<span class="flex items-center gap-1" data-status="off"><Ban class="size-3 shrink-0" />{t().avail.notPlayingShort}: {status.off.join(', ')}</span>
+		{/if}
+		{#if status.away.length}
+			<span class="flex items-center gap-1" data-status="away"><Palmtree class="size-3 shrink-0" />{t().common.onBreakShort}: {status.away.join(', ')}</span>
+		{/if}
+		{#if status.missing.length}
+			<span class="text-faint" data-status="missing">{t().avail.notYet}: {status.missing.join(', ')}</span>
+		{/if}
+	</p>
 	<div class="border-t border-line px-4 py-3 text-[13px] sm:px-5" aria-live="polite" data-overlap-detail>
 		{#if picked}
 			<div class="flex flex-wrap items-baseline gap-x-2">
 				<span class="font-mono text-fg tabular-nums">{fmtDay(picked.date)}, {slotLabel(picked.slot)}</span>
 				<span class="text-xs text-muted">{t().overlap.free(picked.people.length)}</span>
-				{#if picked.courts !== undefined}<span class="text-xs {picked.courts === 0 ? 'text-danger' : 'text-faint'}">· {t().common.courtsOpen(picked.courts)}</span>{/if}
+				{#if picked.courts && total(picked.courts) === 0}
+					<span class="text-xs text-danger">· {t().common.courtsOpen(0)}</span>
+				{:else if picked.courts}
+					<span class="flex items-center gap-3 text-xs text-muted">
+						{#each VENUES as v (v.id)}
+							<span class="flex items-center gap-1.5 {picked.courts[v.id] ? '' : 'text-faint'}"><span class="size-2 {VENUE_BG[v.id]} {picked.courts[v.id] ? '' : 'opacity-30'}"></span>{v.short} {picked.courts[v.id]}</span>
+						{/each}
+					</span>
+				{/if}
 			</div>
 			{#if picked.people.length}
 				<ul class="mt-3 flex flex-wrap gap-x-6 gap-y-2">

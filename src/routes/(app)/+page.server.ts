@@ -1,8 +1,9 @@
 import { courtKey, findOpportunities, planWeeks } from '#lib/match.js';
 import { GAME_LENGTHS } from '#lib/format.js';
-import { availability, blocks, courts, freeBlocks, people, prices } from '#lib/server/data.js';
+import { availability, blocks, courts, freeBlocks, notPlaying, people, prices } from '#lib/server/data.js';
 import { HORIZON_DAYS } from '#lib/server/scraper.js';
 import { SLOT_MINUTES, addDays, isDate, minutesNowLocal, todayLocal, weekDates, weekStart } from '#lib/time.js';
+import type { VenueId } from '#lib/venues.js';
 import type { PageServerLoad } from './$types';
 
 
@@ -40,22 +41,23 @@ export const load: PageServerLoad = ({ url, locals }) => {
 
 	const plan = planWeeks([...doubles, ...singles], input.duration);
 
-	// who-is-free table for the asked week: who marked each slot, and how many doubles courts are free
+	// who-is-free table for the asked week: who marked each slot, and how many doubles courts each club has free
 	const asked = url.searchParams.get('week');
 	const monday = weekStart(isDate(asked) ? asked : today);
 	const weekDays = weekDates(monday);
 	const weekBlocks = blocks(weekDays);
-	const courtsFree: Record<string, Record<number, number>> = {};
+	const courtsFree: Record<string, Record<number, Record<VenueId, number>>> = {};
 	for (const date of weekDays) {
 		if (!weekBlocks[date]) continue;
-		const byDate: Record<number, number> = (courtsFree[date] = {});
+		const byDate: Record<number, Record<VenueId, number>> = (courtsFree[date] = {});
 		for (const c of input.courts.filter((c) => c.kind === 'doubles')) {
 			for (const [slot, b] of Object.entries(weekBlocks[date][courtKey(c)] ?? {})) {
-				byDate[Number(slot)] = (byDate[Number(slot)] ?? 0) + (b.free ? 1 : 0);
+				const n = (byDate[Number(slot)] ??= { aurial: 0, oura: 0 });
+				if (b.free) n[c.venue as VenueId]++;
 			}
 		}
 	}
-	const overlap = { monday, dates: weekDays, today, free: availability(weekDays), courtsFree };
+	const overlap = { monday, dates: weekDays, today, free: availability(weekDays), courtsFree, notPlaying: notPlaying(monday) };
 
 	return {
 		len,
